@@ -123,6 +123,10 @@ User=www-data
 Group=www-data
 WorkingDirectory=/var/www/kafka-basvuru
 Environment=PATH=/var/www/kafka-basvuru/venv/bin
+Environment=FLASK_ENV=production
+Environment=FLASK_DEBUG=False
+Environment=GEMINI_API_KEY=AIzaSyD2LkNVz4pus6dBjAF0aPQFcoUX3sR0OUo
+Environment=SECRET_KEY=$SECRET_KEY
 ExecStart=/var/www/kafka-basvuru/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:8000 web.app:app
 Restart=always
 RestartSec=10

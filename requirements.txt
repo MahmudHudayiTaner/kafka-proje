@@ -14,7 +14,6 @@ gunicorn==21.2.0
 # sqlite3 is built-in with Python
 
 # File Upload & Security
-werkzeug==2.3.7
 
 
 

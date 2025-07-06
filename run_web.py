@@ -24,12 +24,17 @@ def main():
     # Web uygulamasını başlat
     try:
         from web.app import app
+        
+        # Debug modunu environment variable'dan al
+        debug_mode = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+        
         print("\n🌐 Web uygulaması başlatılıyor...")
+        print(f"🐛 Debug modu: {'Açık' if debug_mode else 'Kapalı'}")
         print("📱 Tarayıcıda http://localhost:5000 adresini açın")
         print("⏹️  Durdurmak için Ctrl+C tuşlayın")
         print("-" * 50)
         
-        app.run(debug=True, host='0.0.0.0', port=5000)
+        app.run(debug=debug_mode, host='0.0.0.0', port=5000)
         
     except KeyboardInterrupt:
         print("\n👋 Web uygulaması durduruldu")

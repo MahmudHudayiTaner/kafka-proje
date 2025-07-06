@@ -24,7 +24,7 @@ app.secret_key = 'kafka_proje_secret_key_2024'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 saat
 
 # Konfigürasyon
-UPLOAD_FOLDER = '../uploads'  # Proje kök dizinindeki uploads klasörü
+UPLOAD_FOLDER = 'uploads'  # Proje kök dizinindeki uploads klasörü
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
@@ -139,7 +139,8 @@ def submit_basvuru():
                     file_path = upload_path / filename
                     file.save(str(file_path))
                     
-                    basvuru_data['pdf_dosya_yolu'] = str(file_path)
+                    # Sadece dosya adını kaydet (tam yol değil)
+                    basvuru_data['pdf_dosya_yolu'] = filename
                     logger.info(f"PDF dosyası yüklendi: {filename}")
                 else:
                     flash('Sadece PDF, PNG, JPG ve JPEG dosyaları kabul edilir!', 'error')
@@ -178,13 +179,15 @@ def submit_basvuru():
                 from src.services.pdf_analyzer import get_pdf_analyzer
                 
                 pdf_analyzer = get_pdf_analyzer()
-                analiz_sonucu = pdf_analyzer.analyze_dekont(basvuru_data['pdf_dosya_yolu'])
+                # Tam dosya yolunu oluştur
+                full_pdf_path = str(Path(app.config['UPLOAD_FOLDER']) / basvuru_data['pdf_dosya_yolu'])
+                analiz_sonucu = pdf_analyzer.analyze_dekont(full_pdf_path)
                 
                 if analiz_sonucu:
                     # Analiz sonucunu veritabanına kaydet
                     analiz_data = {
                         'basvuru_id': basvuru_id,
-                        'pdf_dosya_yolu': basvuru_data['pdf_dosya_yolu'],
+                        'pdf_dosya_yolu': basvuru_data['pdf_dosya_yolu'],  # Sadece dosya adı
                         'sender_name': analiz_sonucu.get('sender_name'),
                         'amount': analiz_sonucu.get('amount'),
                         'bank_name': analiz_sonucu.get('bank_name'),
@@ -609,7 +612,9 @@ def api_dekont_analiz_getir(analiz_id):
 def uploaded_file(filename):
     """Yüklenen dosyaları serve et"""
     try:
-        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        # Proje kök dizinindeki uploads klasöründen serve et
+        upload_folder = Path(__file__).parent.parent / 'uploads'
+        return send_from_directory(str(upload_folder), filename)
     except Exception as e:
         logger.error(f"Dosya serve etme hatası: {e}")
         return "Dosya bulunamadı", 404

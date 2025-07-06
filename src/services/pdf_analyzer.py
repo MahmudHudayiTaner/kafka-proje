@@ -10,11 +10,14 @@ from typing import Dict, Optional, Any
 import pdfplumber
 import PyPDF2
 from pathlib import Path
+
+# Gemini AI import kontrolü
 try:
     import google.generativeai as genai
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
+    genai = None
 
 from ..core.logger import get_logger
 
@@ -27,8 +30,9 @@ class PDFAnalyzer:
         
         # Gemini AI konfigürasyonu
         try:
-            api_key = "AIzaSyD2LkNVz4pus6dBjAF0aPQFcoUX3sR0OUo"
-            if api_key and GEMINI_AVAILABLE:
+            # API key'i environment variable'dan al, yoksa hardcoded değeri kullan
+            api_key = os.environ.get('GEMINI_API_KEY', "AIzaSyD2LkNVz4pus6dBjAF0aPQFcoUX3sR0OUo")
+            if api_key and GEMINI_AVAILABLE and genai is not None:
                 genai.configure(api_key=api_key)
                 self.gemini_model = genai.GenerativeModel('gemini-1.5-flash')
                 self.use_ai = True
