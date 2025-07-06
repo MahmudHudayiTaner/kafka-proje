@@ -3,6 +3,7 @@ import sys
 import os
 import tempfile
 import shutil
+import gc
 from datetime import datetime
 
 # Proje kök dizinini Python path'ine ekle
@@ -27,9 +28,16 @@ class TestBasvuru(unittest.TestCase):
         
     def tearDown(self):
         """Her test sonrası çalışır"""
+        # Garbage collector'ı çağır
+        gc.collect()
+        
         # Test veritabanını sil
-        if os.path.exists(self.test_db_path):
-            os.remove(self.test_db_path)
+        try:
+            if os.path.exists(self.test_db_path):
+                os.remove(self.test_db_path)
+        except PermissionError:
+            # Dosya hâlâ açıksa, silmeyi atla
+            pass
     
     def test_basvuru_olustur(self):
         """Başvuru oluşturma testi"""
@@ -55,6 +63,7 @@ class TestBasvuru(unittest.TestCase):
         self.assertIsNotNone(basvuru_id)
         
         # Başvuruyu getir ve kontrol et
+        self.assertIsNotNone(basvuru_id)
         basvuru = self.db.basvuru_getir(basvuru_id)
         self.assertIsNotNone(basvuru)
         self.assertEqual(basvuru['ad'], 'Test Öğrenci')

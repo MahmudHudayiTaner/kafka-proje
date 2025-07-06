@@ -3,6 +3,7 @@ import sys
 import os
 import tempfile
 import shutil
+import gc
 from datetime import datetime
 
 # Proje kök dizinini Python path'ine ekle
@@ -20,23 +21,28 @@ class TestWebApp(unittest.TestCase):
         # Test veritabanı için geçici dosya
         self.test_db_path = tempfile.mktemp(suffix='.db')
         
-        # Test konfigürasyonu
-        app.config['TESTING'] = True
-        app.config['DATABASE_PATH'] = self.test_db_path
-        
-        # Test client oluştur
-        self.client = app.test_client()
-        
         # Test veritabanını başlat
         self.db = Database()
         self.db.db_path = self.test_db_path
         self.db._init_database()
         
+        # Flask test client'ı
+        app.config['TESTING'] = True
+        app.config['WTF_CSRF_ENABLED'] = False
+        self.client = app.test_client()
+        
     def tearDown(self):
         """Her test sonrası çalışır"""
+        # Garbage collector'ı çağır
+        gc.collect()
+        
         # Test veritabanını sil
-        if os.path.exists(self.test_db_path):
-            os.remove(self.test_db_path)
+        try:
+            if os.path.exists(self.test_db_path):
+                os.remove(self.test_db_path)
+        except PermissionError:
+            # Dosya hâlâ açıksa, silmeyi atla
+            pass
     
     def test_ana_sayfa(self):
         """Ana sayfa testi"""

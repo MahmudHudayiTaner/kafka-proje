@@ -6,7 +6,9 @@ import sys
 from datetime import datetime, date
 from pathlib import Path
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
+
+
 
 # src klasörünü Python path'ine ekle
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -22,7 +24,7 @@ app.secret_key = 'kafka_proje_secret_key_2024'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 saat
 
 # Konfigürasyon
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = '../uploads'  # Proje kök dizinindeki uploads klasörü
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
@@ -169,6 +171,42 @@ def submit_basvuru():
         
         # Veritabanına kaydet
         basvuru_id = db.basvuru_ekle(basvuru.to_dict())
+        
+        # PDF analizi yap (eğer PDF yüklendiyse)
+        if basvuru_id and basvuru_data['pdf_dosya_yolu']:
+            try:
+                from src.services.pdf_analyzer import get_pdf_analyzer
+                
+                pdf_analyzer = get_pdf_analyzer()
+                analiz_sonucu = pdf_analyzer.analyze_dekont(basvuru_data['pdf_dosya_yolu'])
+                
+                if analiz_sonucu:
+                    # Analiz sonucunu veritabanına kaydet
+                    analiz_data = {
+                        'basvuru_id': basvuru_id,
+                        'pdf_dosya_yolu': basvuru_data['pdf_dosya_yolu'],
+                        'sender_name': analiz_sonucu.get('sender_name'),
+                        'amount': analiz_sonucu.get('amount'),
+                        'bank_name': analiz_sonucu.get('bank_name'),
+                        'date': analiz_sonucu.get('date'),
+                        'time': analiz_sonucu.get('time'),
+                        'extraction_date': analiz_sonucu.get('extraction_date'),
+                        'raw_text': analiz_sonucu.get('raw_text'),
+                        'confidence_score': analiz_sonucu.get('confidence_score', 0.8),
+                        'ai_used': analiz_sonucu.get('ai_used', False)
+                    }
+                    
+                    analiz_id = db.dekont_analizi_ekle(analiz_data)
+                    if analiz_id:
+                        logger.info(f"Dekont analizi başarıyla kaydedildi: AnalizID={analiz_id}, BasvuruID={basvuru_id}")
+                    else:
+                        logger.warning("Dekont analizi kaydedilemedi")
+                else:
+                    logger.warning("PDF analizi sonuç döndürmedi")
+                    
+            except Exception as e:
+                logger.error(f"PDF analizi hatası: {e}")
+                # PDF analizi başarısız olsa da başvuru kaydedilmeye devam eder
         
         if basvuru_id:
             flash(f'Başvurunuz başarıyla kaydedildi!', 'success')
@@ -532,6 +570,49 @@ def admin_odemeler():
         logger.error(f"Admin ödeme listeleme hatası: {e}")
         flash('Ödemeler yüklenirken bir hata oluştu.', 'error')
         return render_template('admin_odemeler.html', odemeler=[])
+
+@app.route('/admin/dekont-analizleri')
+@login_required
+def admin_dekont_analizleri():
+    """Admin dekont analizleri listesi"""
+    try:
+        dekont_analizleri = db.dekont_analizleri_listele(limit=50)
+        return render_template('admin_dekont_analizleri.html', dekont_analizleri=dekont_analizleri)
+    except Exception as e:
+        logger.error(f"Admin dekont analizleri hatası: {e}")
+        flash('Dekont analizleri yüklenirken hata oluştu!', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+@app.route('/api/dekont-analiz/<int:analiz_id>')
+def api_dekont_analiz_getir(analiz_id):
+    """API: Dekont analizi detayı getir"""
+    try:
+        analiz = db.dekont_analizi_getir(analiz_id)
+        if analiz:
+            # Başvuru bilgilerini de ekle
+            basvuru = db.basvuru_getir(analiz['basvuru_id'])
+            if basvuru:
+                analiz.update({
+                    'ad': basvuru['ad'],
+                    'soyad': basvuru['soyad'],
+                    'telefon': basvuru['telefon'],
+                    'eposta': basvuru['eposta']
+                })
+            return jsonify(analiz)
+        else:
+            return jsonify({'error': 'Dekont analizi bulunamadı'}), 404
+    except Exception as e:
+        logger.error(f"API dekont analiz getirme hatası: {e}")
+        return jsonify({'error': 'Sunucu hatası'}), 500
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """Yüklenen dosyaları serve et"""
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    except Exception as e:
+        logger.error(f"Dosya serve etme hatası: {e}")
+        return "Dosya bulunamadı", 404
 
 if __name__ == '__main__':
     import os

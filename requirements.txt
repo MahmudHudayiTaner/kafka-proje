@@ -16,11 +16,17 @@ gunicorn==21.2.0
 # File Upload & Security
 werkzeug==2.3.7
 
-# Environment Variables
-python-dotenv==1.0.0
+
 
 # Logging
 colorama==0.4.6
+
+# PDF Processing
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+
+# Text Processing & AI
+google-generativeai==0.3.2
 
 # Additional Dependencies
 six==1.16.0

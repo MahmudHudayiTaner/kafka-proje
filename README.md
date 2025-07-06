@@ -6,6 +6,7 @@ Basit ve kullanışlı bir web tabanlı başvuru formu sistemi.
 
 - **Web Formu**: Kullanıcı dostu başvuru formu
 - **PDF Yükleme**: Opsiyonel PDF dosyası yükleme
+- **🤖 Gemini AI**: Otomatik dekont analizi
 - **Veritabanı**: SQLite ile veri saklama
 - **Loglama**: Detaylı işlem logları
 - **Responsive**: Mobil uyumlu tasarım
@@ -15,6 +16,7 @@ Basit ve kullanışlı bir web tabanlı başvuru formu sistemi.
 - Python 3.8+
 - Flask
 - SQLite3
+- Gemini AI API Key (opsiyonel)
 
 ## 🛠️ Kurulum
 
@@ -29,7 +31,14 @@ cd "Kafka Proje"
 pip install -r requirements.txt
 ```
 
-3. **Uygulamayı başlatın:**
+3. **Gemini AI API Key'i ayarlayın (opsiyonel):**
+```bash
+# env_example.txt dosyasını .env olarak kopyalayın
+cp env_example.txt .env
+# .env dosyasını düzenleyin ve GEMINI_API_KEY'i ayarlayın
+```
+
+4. **Uygulamayı başlatın:**
 ```bash
 python run_web.py
 ```
@@ -61,8 +70,14 @@ Kafka Proje/
 
 ### Başvuru Formu
 - Ana sayfada başvuru formunu doldurun
-- PDF dosyası yükleyebilirsiniz (opsiyonel)
+- PDF dekont yükleyebilirsiniz (opsiyonel)
+- **🤖 Gemini AI otomatik olarak dekontu analiz eder**
 - Form gönderildikten sonra veriler veritabanına kaydedilir
+
+### Admin Paneli
+- `/admin/login` ile giriş yapın (kullanıcı: admin, şifre: admin123)
+- Başvuruları, öğrencileri ve ödemeleri yönetin
+- **Dekont Analizleri** sayfasından AI analizlerini görüntüleyin
 
 ### Başvuru Listesi
 - `/basvurular` sayfasından tüm başvuruları görüntüleyebilirsiniz
@@ -86,12 +101,19 @@ SQLite veritabanı `data/basvurular.db` dosyasında saklanır.
 
 **Tablolar:**
 - `basvurular`: Başvuru bilgileri
+- `dekont_analizleri`: AI dekont analizleri
+- `adminler`: Admin kullanıcıları
+- `ogrenciler`: Öğrenci bilgileri
+- `seviye_kayitlari`: Öğrenci seviyeleri
+- `odemeler`: Ödeme kayıtları
 
 ## 🚨 Güvenlik
 
 - Form verileri doğrulanır ve temizlenir
 - Dosya yükleme güvenliği sağlanır
 - SQL injection koruması
+- XSS koruması
+- AI analizi güvenliği
 
 ## 📝 Lisans
 

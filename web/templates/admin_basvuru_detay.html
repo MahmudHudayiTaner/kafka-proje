@@ -140,7 +140,7 @@
                                     <label class="form-label fw-bold">PDF Dosyası:</label>
                                     <p class="form-control-plaintext">
                                         <i class="fas fa-file-pdf me-1 text-danger"></i>
-                                        <a href="{{ url_for('static', filename='../uploads/' + basvuru.pdf_dosya_yolu.split('/')[-1]) }}" 
+                                        <a href="/uploads/{{ basvuru.pdf_dosya_yolu.split('\\')[-1] if '\\' in basvuru.pdf_dosya_yolu else basvuru.pdf_dosya_yolu.split('/')[-1] }}" 
                                            target="_blank" class="text-decoration-none">
                                             PDF'i Görüntüle
                                         </a>

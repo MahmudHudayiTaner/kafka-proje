@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Dekont Analizleri - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="card-title mb-0">
+                                <i class="fas fa-file-pdf text-danger"></i>
+                                Dekont Analizleri
+                            </h4>
+                            <p class="text-muted mb-0">Yüklenen dekontlardan otomatik çıkarılan bilgiler</p>
+                        </div>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-1"></i>Geri Dön
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if dekont_analizleri %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Başvuru Sahibi</th>
+                                    <th>Gönderen</th>
+                                    <th>Tutar</th>
+                                    <th>Banka</th>
+                                    <th>İşlem Tarihi</th>
+                                    <th>Analiz Tarihi</th>
+                                    <th>Güven Skoru</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for analiz in dekont_analizleri %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ analiz.id }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ analiz.ad }} {{ analiz.soyad }}</strong><br>
+                                        <small class="text-muted">{{ analiz.telefon }}</small>
+                                    </td>
+                                    <td>
+                                        {% if analiz.sender_name %}
+                                            <span class="text-success">{{ analiz.sender_name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analiz.amount %}
+                                            <span class="badge bg-success">{{ "%.2f"|format(analiz.amount) }} ₺</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analiz.bank_name %}
+                                            <span class="badge bg-info">{{ analiz.bank_name }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analiz.transaction_date %}
+                                            {{ analiz.transaction_date }}
+                                            {% if analiz.transaction_time %}
+                                                <br><small class="text-muted">{{ analiz.transaction_time }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ analiz.extraction_date }}</small>
+                                    </td>
+                                    <td>
+                                        {% if analiz.confidence_score %}
+                                            {% set score = analiz.confidence_score * 100 %}
+                                            {% if score >= 80 %}
+                                                <span class="badge bg-success">{{ "%.0f"|format(score) }}%</span>
+                                            {% elif score >= 60 %}
+                                                <span class="badge bg-warning">{{ "%.0f"|format(score) }}%</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">{{ "%.0f"|format(score) }}%</span>
+                                            {% endif %}
+                                            {% if analiz.ai_used %}
+                                                <br><small class="text-info"><i class="fas fa-robot"></i> AI</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="showAnalizDetay({{ analiz.id }})">
+                                            <i class="fas fa-eye"></i> Detay
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-pdf fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Henüz dekont analizi bulunmuyor</h5>
+                        <p class="text-muted">Başvuru formunda PDF dekont yükleyen kişilerin analizleri burada görünecek.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analiz Detay Modal -->
+<div class="modal fade" id="analizDetayModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-pdf text-danger"></i>
+                    Dekont Analiz Detayı
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="analizDetayContent">
+                <!-- İçerik JavaScript ile doldurulacak -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showAnalizDetay(analizId) {
+    fetch(`/api/dekont-analiz/${analizId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Analiz detayı bulunamadı!');
+                return;
+            }
+            
+            const modalContent = document.getElementById('analizDetayContent');
+            modalContent.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user text-primary"></i> Başvuru Bilgileri</h6>
+                        <p><strong>Ad Soyad:</strong> ${escapeHTML(data.ad)} ${escapeHTML(data.soyad)}</p>
+                        <p><strong>Telefon:</strong> ${escapeHTML(data.telefon)}</p>
+                        <p><strong>E-posta:</strong> ${escapeHTML(data.eposta || '-')}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-money-bill text-success"></i> Ödeme Bilgileri</h6>
+                        <p><strong>Gönderen:</strong> ${escapeHTML(data.sender_name || '-')}</p>
+                        <p><strong>Tutar:</strong> ${data.amount ? data.amount + ' ₺' : '-'}</p>
+                        <p><strong>Banka:</strong> ${escapeHTML(data.bank_name || '-')}</p>
+                        <p><strong>İşlem Tarihi:</strong> ${escapeHTML(data.transaction_date || '-')}</p>
+                        <p><strong>İşlem Saati:</strong> ${escapeHTML(data.transaction_time || '-')}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="fas fa-cogs text-info"></i> Analiz Bilgileri</h6>
+                        <p><strong>Analiz Tarihi:</strong> ${escapeHTML(data.extraction_date)}</p>
+                        <p><strong>Güven Skoru:</strong> ${data.confidence_score ? (data.confidence_score * 100).toFixed(0) + '%' : '-'}</p>
+                        <p><strong>PDF Dosyası:</strong> ${escapeHTML(data.pdf_dosya_yolu)}</p>
+                    </div>
+                </div>
+                ${data.raw_text ? `
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6><i class="fas fa-file-alt text-secondary"></i> Çıkarılan Metin (İlk 500 karakter)</h6>
+                        <div class="bg-light p-3 rounded">
+                            <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9em;">${escapeHTML(data.raw_text)}</pre>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('analizDetayModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Analiz detayı getirme hatası:', error);
+            alert('Analiz detayı yüklenirken hata oluştu!');
+        });
+}
+
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+</script>
+{% endblock %} 

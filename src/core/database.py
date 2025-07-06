@@ -113,6 +113,25 @@ class Database:
                     )
                 ''')
                 
+                # Dekont analizleri tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS dekont_analizleri (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        basvuru_id INTEGER NOT NULL,
+                        pdf_dosya_yolu TEXT NOT NULL,
+                        sender_name TEXT,
+                        amount DECIMAL(10,2),
+                        bank_name TEXT,
+                        transaction_date DATE,
+                        transaction_time TIME,
+                        extraction_date DATETIME NOT NULL,
+                        raw_text TEXT,
+                        confidence_score DECIMAL(3,2) DEFAULT 0.0,
+                        olusturma_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (basvuru_id) REFERENCES basvurular (id)
+                    )
+                ''')
+                
                 conn.commit()
                 self.logger.info("Veritabanı başarıyla başlatıldı")
                 
@@ -615,6 +634,107 @@ class Database:
                 
         except Exception as e:
             self.logger.error(f"Ödeme listeleme hatası: {e}")
+            return []
+    
+    # Dekont analizi işlemleri
+    def dekont_analizi_ekle(self, analiz_data: Dict[str, Any]) -> Optional[int]:
+        """Yeni dekont analizi ekle"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    INSERT INTO dekont_analizleri 
+                    (basvuru_id, pdf_dosya_yolu, sender_name, amount, bank_name, 
+                     transaction_date, transaction_time, extraction_date, raw_text, confidence_score)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    analiz_data['basvuru_id'],
+                    analiz_data['pdf_dosya_yolu'],
+                    analiz_data.get('sender_name'),
+                    analiz_data.get('amount'),
+                    analiz_data.get('bank_name'),
+                    analiz_data.get('date'),
+                    analiz_data.get('time'),
+                    analiz_data['extraction_date'],
+                    analiz_data.get('raw_text'),
+                    analiz_data.get('confidence_score', 0.0)
+                ))
+                
+                analiz_id = cursor.lastrowid
+                conn.commit()
+                
+                self.logger.info(f"Dekont analizi eklendi: ID={analiz_id}, BasvuruID={analiz_data['basvuru_id']}")
+                return analiz_id
+                
+        except Exception as e:
+            self.logger.error(f"Dekont analizi ekleme hatası: {e}")
+            return None
+    
+    def dekont_analizi_getir(self, analiz_id: int) -> Optional[Dict[str, Any]]:
+        """Dekont analizi getir"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM dekont_analizleri WHERE id = ?
+                ''', (analiz_id,))
+                
+                row = cursor.fetchone()
+                if row:
+                    columns = [desc[0] for desc in cursor.description]
+                    return dict(zip(columns, row))
+                
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Dekont analizi getirme hatası: {e}")
+            return None
+    
+    def basvuru_dekont_analizi_getir(self, basvuru_id: int) -> Optional[Dict[str, Any]]:
+        """Başvuruya ait dekont analizi getir"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM dekont_analizleri WHERE basvuru_id = ?
+                    ORDER BY olusturma_tarihi DESC LIMIT 1
+                ''', (basvuru_id,))
+                
+                row = cursor.fetchone()
+                if row:
+                    columns = [desc[0] for desc in cursor.description]
+                    return dict(zip(columns, row))
+                
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Başvuru dekont analizi getirme hatası: {e}")
+            return None
+    
+    def dekont_analizleri_listele(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Dekont analizlerini listele"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT da.*, b.ad, b.soyad, b.telefon
+                    FROM dekont_analizleri da
+                    JOIN basvurular b ON da.basvuru_id = b.id
+                    ORDER BY da.olusturma_tarihi DESC
+                    LIMIT ?
+                ''', (limit,))
+                
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                
+                return [dict(zip(columns, row)) for row in rows]
+                
+        except Exception as e:
+            self.logger.error(f"Dekont analizleri listeleme hatası: {e}")
             return []
 
 # Singleton instance
