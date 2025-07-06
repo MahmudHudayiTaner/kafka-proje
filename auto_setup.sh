@@ -30,9 +30,12 @@ source venv/bin/activate
 echo "📦 Gerekli paketler yükleniyor..."
 pip install -r requirements.txt
 
-# 6. Gerekli klasörleri oluştur
+# 6. Gerekli klasörleri oluştur ve izinleri ayarla
 echo "📂 Gerekli klasörler oluşturuluyor..."
 mkdir -p logs uploads data
+sudo chown -R ubuntu:ubuntu /var/www/kafka-proje
+sudo chmod -R 755 /var/www/kafka-proje
+sudo chmod 644 /var/www/kafka-proje/logs/app.log 2>/dev/null || true
 
 # 7. Systemd servis dosyasını oluştur
 echo "⚙️ Systemd servis dosyası oluşturuluyor..."
