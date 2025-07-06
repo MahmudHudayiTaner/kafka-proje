@@ -1,157 +1,166 @@
-# 🚀 Kafka Proje - Deployment Rehberi
+# 🚀 Kafka Proje - Ubuntu Deployment Rehberi
 
-Bu rehber, Kafka Proje uygulamasını sunucuya kurma ve dış erişim sağlama adımlarını içerir.
+Bu rehber, Kafka Proje uygulamasını Ubuntu server'a kurma adımlarını içerir.
 
 ## 📋 Ön Gereksinimler
 
-- Python 3.11+
-- Git
-- Sunucu hesabı (Railway, Render, Heroku vb.)
+- Ubuntu 18.04+ server
+- Root erişimi
+- Domain adı (opsiyonel)
 
-## 🎯 Hızlı Deployment Seçenekleri
+## 🎯 Hızlı Deployment
 
-### 1. **Railway (Önerilen - Ücretsiz)**
+### 1. GitHub'a Push
 
-#### Adım 1: Railway Hesabı Oluştur
-1. [railway.app](https://railway.app) adresine git
-2. GitHub ile giriş yap
-3. "New Project" → "Deploy from GitHub repo"
-
-#### Adım 2: Projeyi Bağla
-1. GitHub repository'nizi seçin
-2. Railway otomatik olarak Python projesini algılayacak
-3. "Deploy Now" butonuna tıklayın
-
-#### Adım 3: Environment Variables Ayarla
-Railway dashboard'da şu environment variables'ları ekleyin:
-```
-SECRET_KEY=your-super-secret-key-here
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your-secure-password
-```
-
-#### Adım 4: Domain Ayarla
-1. Railway dashboard'da "Settings" → "Domains"
-2. Custom domain ekleyin veya Railway'in verdiği domain'i kullanın
-
-### 2. **Render (Ücretsiz)**
-
-#### Adım 1: Render Hesabı Oluştur
-1. [render.com](https://render.com) adresine git
-2. GitHub ile giriş yap
-3. "New" → "Web Service"
-
-#### Adım 2: Projeyi Bağla
-1. GitHub repository'nizi seçin
-2. Build Command: `pip install -r requirements.txt`
-3. Start Command: `gunicorn web.app:app`
-
-#### Adım 3: Environment Variables
-Render dashboard'da environment variables ekleyin:
-```
-SECRET_KEY=your-super-secret-key-here
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your-secure-password
-```
-
-### 3. **Heroku (Ücretli)**
-
-#### Adım 1: Heroku CLI Kurulumu
 ```bash
-# Windows için
-# Heroku CLI'ı https://devcenter.heroku.com/articles/heroku-cli adresinden indirin
-
-# macOS için
-brew install heroku/brew/heroku
+# Yerel projeyi GitHub'a push edin
+git add .
+git commit -m "Deployment için hazır"
+git push origin main
 ```
 
-#### Adım 2: Heroku'ya Deploy
+### 2. Ubuntu Server'da Deployment
+
 ```bash
-# Heroku'ya giriş
-heroku login
+# Ubuntu server'a SSH ile bağlanın
+ssh ubuntu@your-server-ip
 
-# Yeni app oluştur
-heroku create kafka-basvuru-app
-
-# Environment variables ayarla
-heroku config:set SECRET_KEY=your-super-secret-key-here
-heroku config:set ADMIN_USERNAME=admin
-heroku config:set ADMIN_PASSWORD=your-secure-password
-
-# Deploy et
-git push heroku main
-```
-
-## 🔧 Manuel Sunucu Kurulumu
-
-### VPS/DigitalOcean Kurulumu
-
-#### Adım 1: Sunucu Hazırlığı
-```bash
-# Ubuntu/Debian için
-sudo apt update
-sudo apt install python3 python3-pip python3-venv nginx
-
-# CentOS/RHEL için
-sudo yum update
-sudo yum install python3 python3-pip nginx
-```
-
-#### Adım 2: Projeyi İndir
-```bash
-# Git ile klonla
+# Projeyi GitHub'dan indirin
 git clone https://github.com/your-username/kafka-proje.git
 cd kafka-proje
 
+# Deployment script'ini çalıştırın
+sudo bash deploy.sh
+```
+
+## 🔧 Manuel Deployment
+
+### Adım 1: Sistem Hazırlığı
+
+```bash
+# Sistem güncellemesi
+sudo apt update && sudo apt upgrade -y
+
+# Gerekli paketleri kur
+sudo apt install -y python3 python3-pip python3-venv nginx git curl wget unzip ufw
+```
+
+### Adım 2: Proje Kurulumu
+
+```bash
+# Proje dizini oluştur
+sudo mkdir -p /var/www/kafka-basvuru
+sudo chown $USER:$USER /var/www/kafka-basvuru
+
+# GitHub'dan projeyi indir
+cd /var/www/kafka-basvuru
+git clone https://github.com/your-username/kafka-proje.git .
+
 # Virtual environment oluştur
 python3 -m venv venv
-source venv/bin/activate  # Linux/macOS
-# venv\Scripts\activate  # Windows
+source venv/bin/activate
 
 # Bağımlılıkları kur
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-#### Adım 3: Gunicorn ile Çalıştır
+### Adım 3: Environment Variables
+
 ```bash
-# Gunicorn ile başlat
-gunicorn --bind 0.0.0.0:8000 web.app:app --workers 4
+# Secret key oluştur
+SECRET_KEY=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+
+# .env dosyası oluştur
+cat > .env << EOF
+SECRET_KEY=$SECRET_KEY
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+FLASK_ENV=production
+EOF
+
+# İzinleri ayarla
+sudo chown www-data:www-data .env
+sudo chmod 600 .env
 ```
 
-#### Adım 4: Nginx Konfigürasyonu
-```bash
-# Nginx config dosyası oluştur
-sudo nano /etc/nginx/sites-available/kafka-basvuru
+### Adım 4: Nginx Konfigürasyonu
 
-# İçeriği:
+```bash
+# Domain adını girin
+read -p "Domain adınızı girin: " DOMAIN
+
+# Nginx config oluştur
+sudo tee /etc/nginx/sites-available/kafka-basvuru > /dev/null << EOF
 server {
     listen 80;
-    server_name your-domain.com;
+    server_name $DOMAIN www.$DOMAIN;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
     location /static {
-        alias /path/to/your/project/web/static;
+        alias /var/www/kafka-basvuru/web/static;
     }
 }
+EOF
 
 # Symlink oluştur
-sudo ln -s /etc/nginx/sites-available/kafka-basvuru /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/kafka-basvuru /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 
 # Nginx'i yeniden başlat
-sudo systemctl restart nginx
+sudo nginx -t && sudo systemctl restart nginx
 ```
 
-#### Adım 5: SSL Sertifikası (Let's Encrypt)
+### Adım 5: Systemd Service
+
+```bash
+# Service dosyası oluştur
+sudo tee /etc/systemd/system/kafka-basvuru.service > /dev/null << EOF
+[Unit]
+Description=Kafka Dil Akademisi Web Uygulaması
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/kafka-basvuru
+Environment=PATH=/var/www/kafka-basvuru/venv/bin
+ExecStart=/var/www/kafka-basvuru/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:8000 web.app:app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Service'i etkinleştir
+sudo systemctl daemon-reload
+sudo systemctl enable kafka-basvuru
+sudo systemctl start kafka-basvuru
+```
+
+### Adım 6: Firewall Ayarları
+
+```bash
+# Firewall ayarları
+sudo ufw allow ssh
+sudo ufw allow 'Nginx Full'
+sudo ufw --force enable
+```
+
+## 🔒 SSL Sertifikası Kurulumu
+
 ```bash
 # Certbot kur
-sudo apt install certbot python3-certbot-nginx
+sudo apt install -y certbot python3-certbot-nginx
 
 # SSL sertifikası al
 sudo certbot --nginx -d your-domain.com
@@ -162,155 +171,72 @@ sudo crontab -e
 0 12 * * * /usr/bin/certbot renew --quiet
 ```
 
-## 🔒 Güvenlik Ayarları
-
-### Environment Variables
-```bash
-# Güvenli secret key oluştur
-python -c "import secrets; print(secrets.token_hex(32))"
-
-# Environment variables ayarla
-export SECRET_KEY="your-generated-secret-key"
-export ADMIN_USERNAME="admin"
-export ADMIN_PASSWORD="your-secure-password"
-```
-
-### Firewall Ayarları
-```bash
-# UFW firewall kur
-sudo apt install ufw
-
-# SSH ve HTTP/HTTPS portlarını aç
-sudo ufw allow ssh
-sudo ufw allow 80
-sudo ufw allow 443
-
-# Firewall'u etkinleştir
-sudo ufw enable
-```
-
 ## 📊 Monitoring ve Logs
 
-### Systemd Service Oluştur
 ```bash
-# Service dosyası oluştur
-sudo nano /etc/systemd/system/kafka-basvuru.service
-
-# İçeriği:
-[Unit]
-Description=Kafka Basvuru Web App
-After=network.target
-
-[Service]
-User=www-data
-WorkingDirectory=/var/www/kafka-basvuru
-Environment="PATH=/var/www/kafka-basvuru/venv/bin"
-ExecStart=/var/www/kafka-basvuru/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:8000 web.app:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-
-# Service'i etkinleştir
-sudo systemctl enable kafka-basvuru
-sudo systemctl start kafka-basvuru
-```
-
-### Log Monitoring
-```bash
-# Logları izle
+# Uygulama logları
 sudo journalctl -u kafka-basvuru -f
 
 # Nginx logları
 sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
+
+# Service durumu
+sudo systemctl status kafka-basvuru
 ```
-
-## 🌐 Domain ve DNS Ayarları
-
-### Domain Ayarları
-1. Domain sağlayıcınızın DNS panelinde A record ekleyin
-2. Sunucu IP adresinizi girin
-3. CNAME record ile www subdomain'i yönlendirin
-
-### Cloudflare (Opsiyonel)
-1. [cloudflare.com](https://cloudflare.com) hesabı oluşturun
-2. Domain'inizi ekleyin
-3. DNS ayarlarını yapın
-4. SSL sertifikasını etkinleştirin
-
-## 🔄 Otomatik Deployment
-
-### GitHub Actions ile CI/CD
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy to Production
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    
-    - name: Deploy to Railway
-      uses: railway/deploy@v1
-      with:
-        railway_token: ${{ secrets.RAILWAY_TOKEN }}
-```
-
-## 📱 Mobil Uyumluluk
-
-Uygulama zaten responsive tasarıma sahip. Bootstrap kullanıldığı için mobil cihazlarda da düzgün çalışır.
 
 ## 🚨 Troubleshooting
 
 ### Yaygın Sorunlar
 
-#### 1. Port 5000 Kullanımda
+#### 1. Service Başlatılamıyor
 ```bash
-# Farklı port kullan
-gunicorn --bind 0.0.0.0:8000 web.app:app
+# Logları kontrol et
+sudo journalctl -u kafka-basvuru -n 50
+
+# Manuel test et
+cd /var/www/kafka-basvuru
+source venv/bin/activate
+gunicorn --bind 127.0.0.1:8000 web.app:app
 ```
 
-#### 2. Permission Denied
+#### 2. Nginx Hatası
 ```bash
-# Dosya izinlerini düzelt
+# Nginx syntax kontrolü
+sudo nginx -t
+
+# Nginx logları
+sudo tail -f /var/log/nginx/error.log
+```
+
+#### 3. Permission Denied
+```bash
+# İzinleri düzelt
 sudo chown -R www-data:www-data /var/www/kafka-basvuru
 sudo chmod -R 755 /var/www/kafka-basvuru
 ```
 
-#### 3. Database Bağlantı Hatası
+## 🔄 Güncelleme
+
 ```bash
-# Veritabanı dosyasının izinlerini kontrol et
-sudo chmod 666 /var/www/kafka-basvuru/data/kafka_proje.db
+# Projeyi güncelle
+cd /var/www/kafka-basvuru
+git pull origin main
+
+# Bağımlılıkları güncelle
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Service'i yeniden başlat
+sudo systemctl restart kafka-basvuru
 ```
-
-#### 4. Static Files Yüklenmiyor
-```bash
-# Nginx config'de static path'i kontrol et
-location /static {
-    alias /var/www/kafka-basvuru/web/static;
-}
-```
-
-## 📞 Destek
-
-Sorun yaşarsanız:
-1. Logları kontrol edin
-2. Environment variables'ları doğrulayın
-3. Port ayarlarını kontrol edin
-4. Firewall ayarlarını kontrol edin
 
 ## 🎉 Başarılı Deployment Sonrası
 
 1. ✅ Uygulama çalışıyor
 2. ✅ Admin paneline erişim var
 3. ✅ Başvuru formu çalışıyor
-4. ✅ SSL sertifikası aktif
+4. ✅ SSL sertifikası aktif (opsiyonel)
 5. ✅ Domain ayarları tamam
 
 Artık uygulamanız dış dünyadan erişilebilir durumda! 🚀 
