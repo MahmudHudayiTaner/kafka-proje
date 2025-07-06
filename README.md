@@ -1,6 +1,82 @@
-# Kafka Proje - Başvuru Sistemi
+# Kafka Dil Akademisi - Başvuru Sistemi
 
-Basit ve kullanışlı bir web tabanlı başvuru formu sistemi.
+PDF dekont analizi yapan web uygulaması. Gemini AI ile otomatik dekont analizi.
+
+## 🚀 Hızlı Kurulum
+
+### Sunucuda Otomatik Kurulum
+
+```bash
+# 1. Scripti indirin
+wget https://raw.githubusercontent.com/MahmudHudayiTaner/kafka-proje/main/auto_setup.sh
+
+# 2. Çalıştırılabilir yapın
+chmod +x auto_setup.sh
+
+# 3. Otomatik kurulumu başlatın
+sudo ./auto_setup.sh
+```
+
+### Manuel Kurulum
+
+```bash
+# 1. Projeyi klonlayın
+git clone https://github.com/MahmudHudayiTaner/kafka-proje.git
+cd kafka-proje
+
+# 2. Virtual environment oluşturun
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Gerekli paketleri yükleyin
+pip install -r requirements.txt
+
+# 4. Gerekli klasörleri oluşturun
+mkdir -p logs uploads data
+
+# 5. Uygulamayı başlatın
+python run_web.py
+```
+
+## 🌐 Kullanım
+
+- **Ana Sayfa**: http://localhost:5000
+- **Admin Panel**: http://localhost:5000/admin/login
+  - Kullanıcı: `admin`
+  - Şifre: `admin123`
+
+## 📁 Proje Yapısı
+
+```
+kafka-proje/
+├── src/                    # Ana kaynak kodlar
+│   ├── core/              # Çekirdek modüller
+│   ├── models/            # Veritabanı modelleri
+│   ├── services/          # Servisler (PDF analiz)
+│   └── utils/             # Yardımcı fonksiyonlar
+├── web/                   # Web uygulaması
+│   ├── app.py            # Flask uygulaması
+│   ├── static/           # CSS, JS dosyaları
+│   └── templates/        # HTML şablonları
+├── auto_setup.sh         # Otomatik kurulum scripti
+├── run_web.py            # Geliştirme sunucusu
+└── requirements.txt      # Python bağımlılıkları
+```
+
+## 🔧 Özellikler
+
+- ✅ PDF dekont yükleme
+- ✅ Otomatik dekont analizi (Gemini AI)
+- ✅ Admin paneli
+- ✅ Başvuru takibi
+- ✅ Otomatik kurulum scripti
+- ✅ Systemd servis desteği
+
+## 📝 Notlar
+
+- API key'ler hardcoded olarak kodda bulunuyor
+- Otomatik kurulum scripti tüm gerekli adımları yapıyor
+- Systemd servisi otomatik olarak kuruluyor
 
 ## 🚀 Özellikler
 
@@ -17,54 +93,6 @@ Basit ve kullanışlı bir web tabanlı başvuru formu sistemi.
 - Flask
 - SQLite3
 - Gemini AI API Key (opsiyonel)
-
-## 🛠️ Kurulum
-
-1. **Projeyi klonlayın:**
-```bash
-git clone <repo-url>
-cd "Kafka Proje"
-```
-
-2. **Bağımlılıkları yükleyin:**
-```bash
-pip install -r requirements.txt
-```
-
-3. **Gemini AI API Key'i ayarlayın (opsiyonel):**
-```bash
-# env_example.txt dosyasını .env olarak kopyalayın
-cp env_example.txt .env
-# .env dosyasını düzenleyin ve GEMINI_API_KEY'i ayarlayın
-```
-
-4. **Uygulamayı başlatın:**
-```bash
-python run_web.py
-```
-
-4. **Tarayıcıda açın:**
-```
-http://localhost:5000
-```
-
-## 📁 Proje Yapısı
-
-```
-Kafka Proje/
-├── data/                   # Veritabanı dosyaları
-├── logs/                   # Log dosyaları
-├── src/                    # Kaynak kodlar
-│   ├── core/              # Temel modüller
-│   ├── models/            # Veri modelleri
-│   └── utils/             # Yardımcı fonksiyonlar
-├── web/                   # Web uygulaması
-│   ├── static/            # CSS, JS dosyaları
-│   ├── templates/         # HTML şablonları
-│   └── uploads/           # Yüklenen dosyalar
-├── requirements.txt        # Python bağımlılıkları
-└── run_web.py            # Başlatıcı script
-```
 
 ## 🎯 Kullanım
 

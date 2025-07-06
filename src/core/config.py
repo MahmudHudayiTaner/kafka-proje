@@ -20,7 +20,8 @@ class Config:
             'log_path': 'logs/app.log',
             'upload_folder': 'web/uploads',
             'max_file_size': 16 * 1024 * 1024,  # 16MB
-            'allowed_extensions': ['pdf']
+            'allowed_extensions': ['pdf'],
+            'gemini_api_key': 'AIzaSyD2LkNVz4pus6dBjAF0aPQFcoUX3sR0OUo'  # Hardcoded API key
         }
     
     def get(self, key: str, default: Any = None) -> Any:

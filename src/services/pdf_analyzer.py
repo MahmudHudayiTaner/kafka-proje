@@ -20,6 +20,7 @@ except ImportError:
     genai = None
 
 from ..core.logger import get_logger
+from ..core.config import get_config
 
 
 class PDFAnalyzer:
@@ -30,8 +31,9 @@ class PDFAnalyzer:
         
         # Gemini AI konfigürasyonu
         try:
-            # API key'i environment variable'dan al, yoksa hardcoded değeri kullan
-            api_key = os.environ.get('GEMINI_API_KEY', "AIzaSyD2LkNVz4pus6dBjAF0aPQFcoUX3sR0OUo")
+            # API key'i config'den al
+            config = get_config()
+            api_key = config.get('gemini_api_key', "AIzaSyD2LkNVz4pus6dBjAF0aPQFcoUX3sR0OUo")
             if api_key and GEMINI_AVAILABLE and genai is not None:
                 genai.configure(api_key=api_key)
                 self.gemini_model = genai.GenerativeModel('gemini-1.5-flash')
