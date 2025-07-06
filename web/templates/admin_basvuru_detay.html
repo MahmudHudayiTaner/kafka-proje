@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Başvuru Detayı{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>Başvuru Detayı
+                        </h4>
+                        <div>
+                            <a href="{{ url_for('admin_basvurular') }}" class="btn btn-outline-light btn-sm me-2">
+                                <i class="fas fa-arrow-left me-1"></i>Geri
+                            </a>
+                            <span class="badge bg-light text-dark">
+                                <i class="fas fa-user me-1"></i>{{ session.admin_username }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if basvuru %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-user me-2"></i>Kişisel Bilgiler
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Ad Soyad:</label>
+                                            <p class="form-control-plaintext">{{ basvuru.ad }} {{ basvuru.soyad }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Telefon:</label>
+                                            <p class="form-control-plaintext">
+                                                <i class="fas fa-phone me-1"></i>{{ basvuru.telefon }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">E-posta:</label>
+                                            <p class="form-control-plaintext">
+                                                {% if basvuru.eposta %}
+                                                    <i class="fas fa-envelope me-1"></i>{{ basvuru.eposta }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Doğum Tarihi:</label>
+                                            <p class="form-control-plaintext">
+                                                {% if basvuru.dogum_tarihi %}
+                                                    <i class="fas fa-birthday-cake me-1"></i>{{ basvuru.dogum_tarihi }}
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Yaş:</label>
+                                            <p class="form-control-plaintext">
+                                                {% if basvuru.yas %}
+                                                    <span class="badge bg-info">{{ basvuru.yas }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Cinsiyet:</label>
+                                            <p class="form-control-plaintext">
+                                                {% if basvuru.cinsiyet == 'erkek' %}
+                                                    <span class="badge bg-primary">{{ basvuru.cinsiyet }}</span>
+                                                {% elif basvuru.cinsiyet == 'kadin' %}
+                                                    <span class="badge bg-danger">{{ basvuru.cinsiyet }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ basvuru.cinsiyet or '-' }}</span>
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if basvuru.adres %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Adres:</label>
+                                    <p class="form-control-plaintext">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ basvuru.adres }}
+                                    </p>
+                                </div>
+                                {% endif %}
+                                
+                                <hr>
+                                
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-graduation-cap me-2"></i>Başvuru Bilgileri
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Başvurulan Kur:</label>
+                                            <p class="form-control-plaintext">
+                                                <span class="badge bg-info">{{ basvuru.kur_seviyesi }}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Başvuru Tarihi:</label>
+                                            <p class="form-control-plaintext">
+                                                <i class="fas fa-calendar me-1"></i>{{ basvuru.basvuru_tarihi_formatted }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {% if basvuru.pdf_dosya_yolu %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">PDF Dosyası:</label>
+                                    <p class="form-control-plaintext">
+                                        <i class="fas fa-file-pdf me-1 text-danger"></i>
+                                        <a href="{{ url_for('static', filename='../uploads/' + basvuru.pdf_dosya_yolu.split('/')[-1]) }}" 
+                                           target="_blank" class="text-decoration-none">
+                                            PDF'i Görüntüle
+                                        </a>
+                                    </p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-cogs me-2"></i>İşlemler
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-grid gap-2">
+                                            <button type="button" 
+                                                    class="btn btn-success btn-sm" 
+                                                    onclick="convertToStudent({{ basvuru.id }})">
+                                                <i class="fas fa-user-graduate me-1"></i>Öğrenciye Çevir
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-danger btn-sm" 
+                                                    onclick="deleteBasvuru({{ basvuru.id }})">
+                                                <i class="fas fa-trash me-1"></i>Başvuruyu Sil
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card border-info mt-3">
+                                    <div class="card-header bg-info text-white">
+                                        <h6 class="mb-0">
+                                            <i class="fas fa-info-circle me-2"></i>Başvuru Bilgileri
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <small>
+                                            <p><strong>Başvuru ID:</strong> #{{ basvuru.id }}</p>
+                                            <p><strong>Durum:</strong> 
+                                                {% if basvuru.durum == 'beklemede' %}
+                                                    <span class="badge bg-warning">Beklemede</span>
+                                                {% elif basvuru.durum == 'onaylandi' %}
+                                                    <span class="badge bg-success">Onaylandı</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ basvuru.durum or 'Belirsiz' }}</span>
+                                                {% endif %}
+                                            </p>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <h5 class="text-warning">Başvuru bulunamadı</h5>
+                            <p class="text-muted">Aradığınız başvuru mevcut değil veya silinmiş olabilir.</p>
+                            <a href="{{ url_for('admin_basvurular') }}" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-1"></i>Başvuru Listesine Dön
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Öğrenciye çevirme modalı -->
+<div class="modal fade" id="convertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-graduate text-success me-2"></i>Öğrenciye Çevir
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bu başvuruyu öğrenciye çevirmek istediğinizden emin misiniz?</p>
+                <p class="text-muted">Başvuru öğrenci kaydına dönüştürülecek ve öğrenci listesine eklenecek.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>İptal
+                </button>
+                <form id="convertForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-user-graduate me-1"></i>Öğrenciye Çevir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Silme onay modalı -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>Başvuru Sil
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bu başvuruyu silmek istediğinizden emin misiniz?</p>
+                <p class="text-muted">Bu işlem geri alınamaz.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>İptal
+                </button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Sil
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function deleteBasvuru(basvuruId) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    const form = document.getElementById('deleteForm');
+    
+    // Form action'ını ayarla
+    form.action = `/admin/basvuru/${basvuruId}/delete`;
+    
+    // Modal'ı göster
+    modal.show();
+}
+
+function convertToStudent(basvuruId) {
+    const modal = new bootstrap.Modal(document.getElementById('convertModal'));
+    const form = document.getElementById('convertForm');
+    
+    // Form action'ını ayarla
+    form.action = `/admin/basvuru/${basvuruId}/convert-to-student`;
+    
+    // Modal'ı göster
+    modal.show();
+}
+</script>
+{% endblock %} 

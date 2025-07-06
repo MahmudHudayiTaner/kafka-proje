@@ -1,253 +1,628 @@
 """
-Veritabanı işlemleri
+SQLite veritabanı işlemleri
 """
 import sqlite3
-from typing import Dict, List, Optional, Any
+import os
 from datetime import datetime
+from typing import List, Dict, Optional, Any
 from pathlib import Path
-from .config import get_config
+
 from .logger import get_logger
+from .config import get_config
 
-
-class DatabaseManager:
+class Database:
     """SQLite veritabanı yöneticisi"""
     
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self):
         config = get_config()
-        self.db_path = db_path or config.get_database_path()
-        self.logger = get_logger(__name__)
-        self._ensure_db_directory()
-        self._create_tables()
+        self.db_path = config.get_database_path()
+        self.logger = get_logger("database")
+        self._init_database()
     
-    def _ensure_db_directory(self) -> None:
-        """Veritabanı dizininin varlığını kontrol et"""
-        db_dir = Path(self.db_path).parent
-        db_dir.mkdir(parents=True, exist_ok=True)
-    
-    def _create_tables(self) -> None:
-        """Gerekli tabloları oluştur"""
-        self.logger.info("Veritabanı tabloları oluşturuluyor...")
-        
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            
-            # Başvurular tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS basvurular (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    ad TEXT NOT NULL,
-                    soyad TEXT NOT NULL,
-                    telefon TEXT NOT NULL,
-                    eposta TEXT NOT NULL,
-                    basvurulan_kur TEXT NOT NULL,
-                    basvuru_tarihi DATE NOT NULL,
-                    pdf_dosya_yolu TEXT,
-                    pdf_icerik TEXT,
-                    ai_analiz_sonucu TEXT,
-                    islenme_durumu TEXT DEFAULT 'beklemede',
-                    olusturma_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    guncelleme_tarihi TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Log tablosu
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS islem_loglari (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    islem_tipi TEXT NOT NULL,
-                    islem_detayi TEXT,
-                    durum TEXT NOT NULL,
-                    hata_mesaji TEXT,
-                    tarih TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            conn.commit()
-            self.logger.info("Veritabanı tabloları başarıyla oluşturuldu")
-    
-    def _get_connection(self) -> sqlite3.Connection:
-        """Veritabanı bağlantısı al"""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row  # Dict-like access
-        return conn
-    
-    def basvuru_ekle(self, basvuru_data: Dict[str, Any]) -> int:
-        """Yeni başvuru ekle"""
+    def _init_database(self):
+        """Veritabanını başlat"""
         try:
-            with self._get_connection() as conn:
+            # Data klasörünü oluştur
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+            
+            # Veritabanı bağlantısı
+            with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                cursor.execute("""
+                # Başvurular tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS basvurular (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ad TEXT NOT NULL,
+                        soyad TEXT NOT NULL,
+                        telefon TEXT NOT NULL,
+                        eposta TEXT,
+                        dogum_tarihi DATE,
+                        cinsiyet TEXT,
+                        adres TEXT,
+                        kur_seviyesi TEXT NOT NULL,
+                        basvuru_tarihi DATETIME NOT NULL,
+                        pdf_dosya_yolu TEXT,
+                        pdf_icerik TEXT,
+                        ai_analiz_sonucu TEXT,
+                        durum TEXT DEFAULT 'beklemede',
+                        olusturma_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # Admin tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS adminler (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        is_active BOOLEAN DEFAULT 1,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # Öğrenciler tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS ogrenciler (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ad TEXT NOT NULL,
+                        soyad TEXT NOT NULL,
+                        telefon TEXT NOT NULL,
+                        eposta TEXT,
+                        aktif_seviye TEXT,
+                        toplam_seviye_sayisi INTEGER DEFAULT 0,
+                        toplam_odenen DECIMAL(10,2) DEFAULT 0,
+                        durum TEXT DEFAULT 'aktif',
+                        kayit_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        guncelleme_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                ''')
+                
+                # Seviye kayıtları tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS seviye_kayitlari (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ogrenci_id INTEGER NOT NULL,
+                        seviye TEXT NOT NULL,
+                        baslama_tarihi DATETIME NOT NULL,
+                        bitis_tarihi DATETIME,
+                        durum TEXT DEFAULT 'aktif',
+                        ucret DECIMAL(10,2) NOT NULL,
+                        odenen_miktar DECIMAL(10,2) DEFAULT 0,
+                        kalan_miktar DECIMAL(10,2) NOT NULL,
+                        olusturma_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (ogrenci_id) REFERENCES ogrenciler (id)
+                    )
+                ''')
+                
+                # Ödemeler tablosu
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS odemeler (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ogrenci_id INTEGER NOT NULL,
+                        seviye_id INTEGER NOT NULL,
+                        odeme_tipi TEXT NOT NULL,
+                        miktar DECIMAL(10,2) NOT NULL,
+                        odeme_tarihi DATETIME,
+                        dekont_yolu TEXT,
+                        durum TEXT DEFAULT 'beklemede',
+                        aciklama TEXT,
+                        olusturma_tarihi DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (ogrenci_id) REFERENCES ogrenciler (id),
+                        FOREIGN KEY (seviye_id) REFERENCES seviye_kayitlari (id)
+                    )
+                ''')
+                
+                conn.commit()
+                self.logger.info("Veritabanı başarıyla başlatıldı")
+                
+                # Varsayılan admin kullanıcısını oluştur
+                self._create_default_admin()
+                
+        except Exception as e:
+            self.logger.error(f"Veritabanı başlatma hatası: {e}")
+            raise
+    
+    def _create_default_admin(self):
+        """Varsayılan admin kullanıcısını oluştur"""
+        try:
+            from src.models.admin import Admin
+            
+            # Varsayılan admin bilgileri
+            default_username = "admin"
+            default_password = "admin123"
+            
+            # Admin var mı kontrol et
+            existing_admin = self.admin_get_by_username(default_username)
+            if existing_admin:
+                return
+            
+            # Yeni admin oluştur
+            password_hash = Admin.hash_password(default_password)
+            admin_data = {
+                'username': default_username,
+                'password_hash': password_hash,
+                'is_active': True
+            }
+            
+            self.admin_ekle(admin_data)
+            self.logger.info(f"Varsayılan admin kullanıcısı oluşturuldu: {default_username}")
+            
+        except Exception as e:
+            self.logger.error(f"Varsayılan admin oluşturma hatası: {e}")
+    
+    # Admin işlemleri
+    def admin_ekle(self, admin_data: Dict[str, Any]) -> Optional[int]:
+        """Yeni admin ekle"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    INSERT INTO adminler 
+                    (username, password_hash, is_active)
+                    VALUES (?, ?, ?)
+                ''', (
+                    admin_data['username'],
+                    admin_data['password_hash'],
+                    admin_data.get('is_active', True)
+                ))
+                
+                admin_id = cursor.lastrowid
+                conn.commit()
+                
+                self.logger.info(f"Admin eklendi: ID={admin_id}, Username={admin_data['username']}")
+                return admin_id
+                
+        except Exception as e:
+            self.logger.error(f"Admin ekleme hatası: {e}")
+            return None
+    
+    def admin_get_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+        """Kullanıcı adına göre admin getir"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM adminler WHERE username = ? AND is_active = 1
+                ''', (username,))
+                
+                row = cursor.fetchone()
+                if row:
+                    columns = [desc[0] for desc in cursor.description]
+                    return dict(zip(columns, row))
+                
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Admin getirme hatası: {e}")
+            return None
+    
+    def admin_verify_password(self, username: str, password: str) -> bool:
+        """Admin şifre doğrulama"""
+        try:
+            from src.models.admin import Admin
+            
+            admin_data = self.admin_get_by_username(username)
+            if not admin_data:
+                return False
+            
+            return Admin.verify_password(password, admin_data['password_hash'])
+            
+        except Exception as e:
+            self.logger.error(f"Admin şifre doğrulama hatası: {e}")
+            return False
+    
+    # Başvuru işlemleri
+    def basvuru_ekle(self, basvuru_data: Dict[str, Any]) -> Optional[int]:
+        """Yeni başvuru ekle"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Email kontrolü - aynı email ile daha önce başvuru yapılmış mı?
+                if basvuru_data.get('eposta'):
+                    cursor.execute('''
+                        SELECT id FROM basvurular WHERE eposta = ? AND eposta != ''
+                    ''', (basvuru_data['eposta'],))
+                    
+                    if cursor.fetchone():
+                        self.logger.warning(f"Bu email ile daha önce başvuru yapılmış: {basvuru_data['eposta']}")
+                        return None
+                
+                cursor.execute('''
                     INSERT INTO basvurular 
-                    (ad, soyad, telefon, eposta, basvurulan_kur, basvuru_tarihi, 
-                     pdf_dosya_yolu, pdf_icerik, ai_analiz_sonucu)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    basvuru_data.get('ad'),
-                    basvuru_data.get('soyad'),
-                    basvuru_data.get('telefon'),
+                    (ad, soyad, telefon, eposta, dogum_tarihi, cinsiyet, adres, kur_seviyesi, basvuru_tarihi, 
+                     pdf_dosya_yolu, pdf_icerik, ai_analiz_sonucu, durum)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    basvuru_data['ad'],
+                    basvuru_data['soyad'],
+                    basvuru_data['telefon'],
                     basvuru_data.get('eposta'),
-                    basvuru_data.get('basvurulan_kur'),
-                    basvuru_data.get('basvuru_tarihi'),
+                    basvuru_data.get('dogum_tarihi'),
+                    basvuru_data.get('cinsiyet'),
+                    basvuru_data.get('adres'),
+                    basvuru_data['kur_seviyesi'],
+                    basvuru_data['basvuru_tarihi'],
                     basvuru_data.get('pdf_dosya_yolu'),
                     basvuru_data.get('pdf_icerik'),
-                    basvuru_data.get('ai_analiz_sonucu')
+                    basvuru_data.get('ai_analiz_sonucu'),
+                    'beklemede'
                 ))
                 
                 basvuru_id = cursor.lastrowid
                 conn.commit()
                 
-                if basvuru_id is None:
-                    raise RuntimeError("Başvuru ID alınamadı")
-                
-                self.logger.info(f"Başvuru eklendi: ID={basvuru_id}, Ad={basvuru_data.get('ad')} {basvuru_data.get('soyad')}")
+                self.logger.info(f"Başvuru eklendi: ID={basvuru_id}")
                 return basvuru_id
                 
         except Exception as e:
-            self.logger.error(f"Başvuru eklenirken hata: {e}")
-            raise
-    
-    def basvuru_guncelle(self, basvuru_id: int, guncelleme_data: Dict[str, Any]) -> bool:
-        """Başvuru güncelle"""
-        try:
-            with self._get_connection() as conn:
-                cursor = conn.cursor()
-                
-                # Güncellenecek alanları hazırla
-                update_fields = []
-                values = []
-                
-                for key, value in guncelleme_data.items():
-                    if key in ['ad', 'soyad', 'telefon', 'eposta', 'basvurulan_kur', 
-                              'basvuru_tarihi', 'pdf_dosya_yolu', 'pdf_icerik', 
-                              'ai_analiz_sonucu', 'islenme_durumu']:
-                        update_fields.append(f"{key} = ?")
-                        values.append(value)
-                
-                if not update_fields:
-                    return False
-                
-                values.append(datetime.now())
-                values.append(basvuru_id)
-                
-                query = f"""
-                    UPDATE basvurular 
-                    SET {', '.join(update_fields)}, guncelleme_tarihi = ?
-                    WHERE id = ?
-                """
-                
-                cursor.execute(query, values)
-                conn.commit()
-                
-                self.logger.info(f"Başvuru güncellendi: ID={basvuru_id}")
-                return True
-                
-        except Exception as e:
-            self.logger.error(f"Başvuru güncellenirken hata: {e}")
-            raise
+            self.logger.error(f"Başvuru ekleme hatası: {e}")
+            return None
     
     def basvuru_getir(self, basvuru_id: int) -> Optional[Dict[str, Any]]:
         """Başvuru getir"""
         try:
-            with self._get_connection() as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                cursor.execute("""
+                cursor.execute('''
                     SELECT * FROM basvurular WHERE id = ?
-                """, (basvuru_id,))
+                ''', (basvuru_id,))
                 
                 row = cursor.fetchone()
-                return dict(row) if row else None
+                if row:
+                    columns = [desc[0] for desc in cursor.description]
+                    return dict(zip(columns, row))
+                
+                return None
                 
         except Exception as e:
-            self.logger.error(f"Başvuru getirilirken hata: {e}")
-            raise
+            self.logger.error(f"Başvuru getirme hatası: {e}")
+            return None
     
-    def basvurulari_listele(self, durum: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+    def basvurulari_listele(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Başvuruları listele"""
         try:
-            with self._get_connection() as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                query = "SELECT * FROM basvurular"
-                params = []
+                cursor.execute('''
+                    SELECT * FROM basvurular 
+                    ORDER BY olusturma_tarihi DESC 
+                    LIMIT ?
+                ''', (limit,))
                 
-                if durum:
-                    query += " WHERE islenme_durumu = ?"
-                    params.append(durum)
-                
-                query += " ORDER BY olusturma_tarihi DESC LIMIT ?"
-                params.append(limit)
-                
-                cursor.execute(query, params)
                 rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
                 
-                return [dict(row) for row in rows]
+                return [dict(zip(columns, row)) for row in rows]
                 
         except Exception as e:
-            self.logger.error(f"Başvurular listelenirken hata: {e}")
-            raise
+            self.logger.error(f"Başvuru listeleme hatası: {e}")
+            return []
     
-    def islem_logu_ekle(self, islem_tipi: str, islem_detayi: str, 
-                        durum: str, hata_mesaji: Optional[str] = None) -> None:
-        """İşlem logu ekle"""
+    def basvuru_sil(self, basvuru_id: int) -> bool:
+        """Başvuru sil"""
         try:
-            with self._get_connection() as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                cursor.execute("""
-                    INSERT INTO islem_loglari 
-                    (islem_tipi, islem_detayi, durum, hata_mesaji)
-                    VALUES (?, ?, ?, ?)
-                """, (islem_tipi, islem_detayi, durum, hata_mesaji))
+                cursor.execute('''
+                    DELETE FROM basvurular WHERE id = ?
+                ''', (basvuru_id,))
                 
                 conn.commit()
                 
+                if cursor.rowcount > 0:
+                    self.logger.info(f"Başvuru silindi: ID={basvuru_id}")
+                    return True
+                else:
+                    self.logger.warning(f"Silinecek başvuru bulunamadı: ID={basvuru_id}")
+                    return False
+                    
         except Exception as e:
-            self.logger.error(f"İşlem logu eklenirken hata: {e}")
+            self.logger.error(f"Başvuru silme hatası: {e}")
+            return False
     
-    def istatistikler_getir(self) -> Dict[str, Any]:
-        """Veritabanı istatistiklerini getir"""
+    def basvuru_guncelle(self, basvuru_id: int, basvuru_data: Dict[str, Any]) -> bool:
+        """Başvuru güncelle"""
         try:
-            with self._get_connection() as conn:
+            with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 
-                # Toplam başvuru sayısı
-                cursor.execute("SELECT COUNT(*) FROM basvurular")
-                toplam_basvuru = cursor.fetchone()[0]
+                cursor.execute('''
+                    UPDATE basvurular SET
+                    ad = ?, soyad = ?, telefon = ?, eposta = ?, 
+                    kur_seviyesi = ?, basvuru_tarihi = ?,
+                    pdf_dosya_yolu = ?, pdf_icerik = ?, ai_analiz_sonucu = ?
+                    WHERE id = ?
+                ''', (
+                    basvuru_data['ad'],
+                    basvuru_data['soyad'],
+                    basvuru_data['telefon'],
+                    basvuru_data.get('eposta'),
+                    basvuru_data['kur_seviyesi'],
+                    basvuru_data['basvuru_tarihi'],
+                    basvuru_data.get('pdf_dosya_yolu'),
+                    basvuru_data.get('pdf_icerik'),
+                    basvuru_data.get('ai_analiz_sonucu'),
+                    basvuru_id
+                ))
                 
-                # Durum bazında sayılar
-                cursor.execute("""
-                    SELECT islenme_durumu, COUNT(*) 
-                    FROM basvurular 
-                    GROUP BY islenme_durumu
-                """)
-                durum_sayilari = dict(cursor.fetchall())
+                conn.commit()
                 
-                # Son 7 günlük başvuru sayısı
-                cursor.execute("""
-                    SELECT COUNT(*) FROM basvurular 
-                    WHERE olusturma_tarihi >= date('now', '-7 days')
-                """)
-                son_7_gun = cursor.fetchone()[0]
+                if cursor.rowcount > 0:
+                    self.logger.info(f"Başvuru güncellendi: ID={basvuru_id}")
+                    return True
+                else:
+                    self.logger.warning(f"Güncellenecek başvuru bulunamadı: ID={basvuru_id}")
+                    return False
+                    
+        except Exception as e:
+            self.logger.error(f"Başvuru güncelleme hatası: {e}")
+            return False
+
+    # Öğrenci işlemleri
+    def ogrenci_ekle(self, ogrenci_data: Dict[str, Any]) -> Optional[int]:
+        """Yeni öğrenci ekle"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
                 
-                return {
-                    'toplam_basvuru': toplam_basvuru,
-                    'durum_sayilari': durum_sayilari,
-                    'son_7_gun': son_7_gun
-                }
+                cursor.execute('''
+                    INSERT INTO ogrenciler 
+                    (ad, soyad, telefon, eposta, aktif_seviye, toplam_seviye_sayisi, durum)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    ogrenci_data['ad'],
+                    ogrenci_data['soyad'],
+                    ogrenci_data['telefon'],
+                    ogrenci_data.get('eposta'),
+                    ogrenci_data.get('aktif_seviye'),
+                    ogrenci_data.get('toplam_seviye_sayisi', 1),
+                    ogrenci_data.get('durum', 'aktif')
+                ))
+                
+                ogrenci_id = cursor.lastrowid
+                conn.commit()
+                
+                self.logger.info(f"Öğrenci eklendi: ID={ogrenci_id}")
+                return ogrenci_id
                 
         except Exception as e:
-            self.logger.error(f"İstatistikler getirilirken hata: {e}")
-            raise
+            self.logger.error(f"Öğrenci ekleme hatası: {e}")
+            return None
+    
+    def ogrenci_getir(self, ogrenci_id: int) -> Optional[Dict[str, Any]]:
+        """Öğrenci getir"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM ogrenciler WHERE id = ?
+                ''', (ogrenci_id,))
+                
+                row = cursor.fetchone()
+                if row:
+                    columns = [desc[0] for desc in cursor.description]
+                    return dict(zip(columns, row))
+                
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Öğrenci getirme hatası: {e}")
+            return None
+    
+    def ogrencileri_listele(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Öğrencileri listele"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM ogrenciler 
+                    ORDER BY kayit_tarihi DESC 
+                    LIMIT ?
+                ''', (limit,))
+                
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                
+                return [dict(zip(columns, row)) for row in rows]
+                
+        except Exception as e:
+            self.logger.error(f"Öğrenci listeleme hatası: {e}")
+            return []
 
+    # Seviye işlemleri
+    def seviye_kaydi_ekle(self, seviye_data: Dict[str, Any]) -> Optional[int]:
+        """Yeni seviye kaydı ekle"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    INSERT INTO seviye_kayitlari 
+                    (ogrenci_id, seviye, baslama_tarihi, ucret, kalan_miktar)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (
+                    seviye_data['ogrenci_id'],
+                    seviye_data['seviye'],
+                    seviye_data['baslama_tarihi'],
+                    seviye_data['ucret'],
+                    seviye_data['kalan_miktar']
+                ))
+                
+                seviye_id = cursor.lastrowid
+                conn.commit()
+                
+                self.logger.info(f"Seviye kaydı eklendi: ID={seviye_id}")
+                return seviye_id
+                
+        except Exception as e:
+            self.logger.error(f"Seviye kaydı ekleme hatası: {e}")
+            return None
+    
+    def seviye_kaydi_getir(self, seviye_id: int) -> Optional[Dict[str, Any]]:
+        """Seviye kaydı getir"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM seviye_kayitlari WHERE id = ?
+                ''', (seviye_id,))
+                
+                row = cursor.fetchone()
+                if row:
+                    columns = [desc[0] for desc in cursor.description]
+                    return dict(zip(columns, row))
+                
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Seviye kaydı getirme hatası: {e}")
+            return None
+    
+    def ogrenci_seviyeleri_getir(self, ogrenci_id: int) -> List[Dict[str, Any]]:
+        """Öğrencinin tüm seviyelerini getir"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    SELECT * FROM seviye_kayitlari 
+                    WHERE ogrenci_id = ? 
+                    ORDER BY baslama_tarihi DESC
+                ''', (ogrenci_id,))
+                
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                
+                return [dict(zip(columns, row)) for row in rows]
+                
+        except Exception as e:
+            self.logger.error(f"Öğrenci seviyeleri getirme hatası: {e}")
+            return []
+
+    # Ödeme işlemleri
+    def odeme_ekle(self, odeme_data: Dict[str, Any]) -> Optional[int]:
+        """Yeni ödeme ekle"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                cursor.execute('''
+                    INSERT INTO odemeler 
+                    (ogrenci_id, seviye_id, odeme_tipi, miktar, dekont_yolu, durum, aciklama)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    odeme_data['ogrenci_id'],
+                    odeme_data['seviye_id'],
+                    odeme_data['odeme_tipi'],
+                    odeme_data['miktar'],
+                    odeme_data.get('dekont_yolu'),
+                    odeme_data.get('durum', 'beklemede'),
+                    odeme_data.get('aciklama')
+                ))
+                
+                odeme_id = cursor.lastrowid
+                conn.commit()
+                
+                self.logger.info(f"Ödeme eklendi: ID={odeme_id}")
+                return odeme_id
+                
+        except Exception as e:
+            self.logger.error(f"Ödeme ekleme hatası: {e}")
+            return None
+    
+    def odeme_onayla(self, odeme_id: int) -> bool:
+        """Ödemeyi onayla"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Ödemeyi getir
+                cursor.execute('''
+                    SELECT * FROM odemeler WHERE id = ?
+                ''', (odeme_id,))
+                
+                odeme = cursor.fetchone()
+                if not odeme:
+                    return False
+                
+                # Ödeme durumunu güncelle
+                cursor.execute('''
+                    UPDATE odemeler SET durum = 'onaylandi', odeme_tarihi = ? WHERE id = ?
+                ''', (datetime.now(), odeme_id))
+                
+                # Seviye kaydını güncelle
+                cursor.execute('''
+                    UPDATE seviye_kayitlari 
+                    SET odenen_miktar = odenen_miktar + ?, kalan_miktar = kalan_miktar - ?
+                    WHERE id = ?
+                ''', (odeme[4], odeme[4], odeme[2]))  # miktar, miktar, seviye_id
+                
+                # Öğrenci toplam ödemesini güncelle
+                cursor.execute('''
+                    UPDATE ogrenciler 
+                    SET toplam_odenen = toplam_odenen + ?, guncelleme_tarihi = ?
+                    WHERE id = ?
+                ''', (odeme[4], datetime.now(), odeme[1]))  # miktar, tarih, ogrenci_id
+                
+                conn.commit()
+                self.logger.info(f"Ödeme onaylandı: ID={odeme_id}")
+                return True
+                
+        except Exception as e:
+            self.logger.error(f"Ödeme onaylama hatası: {e}")
+            return False
+    
+    def odemeleri_listele(self, ogrenci_id: Optional[int] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        """Ödemeleri listele"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                if ogrenci_id:
+                    cursor.execute('''
+                        SELECT o.*, sk.seviye, og.ad, og.soyad 
+                        FROM odemeler o
+                        JOIN seviye_kayitlari sk ON o.seviye_id = sk.id
+                        JOIN ogrenciler og ON o.ogrenci_id = og.id
+                        WHERE o.ogrenci_id = ?
+                        ORDER BY o.olusturma_tarihi DESC
+                        LIMIT ?
+                    ''', (ogrenci_id, limit))
+                else:
+                    cursor.execute('''
+                        SELECT o.*, sk.seviye, og.ad, og.soyad 
+                        FROM odemeler o
+                        JOIN seviye_kayitlari sk ON o.seviye_id = sk.id
+                        JOIN ogrenciler og ON o.ogrenci_id = og.id
+                        ORDER BY o.olusturma_tarihi DESC
+                        LIMIT ?
+                    ''', (limit,))
+                
+                rows = cursor.fetchall()
+                columns = [desc[0] for desc in cursor.description]
+                
+                return [dict(zip(columns, row)) for row in rows]
+                
+        except Exception as e:
+            self.logger.error(f"Ödeme listeleme hatası: {e}")
+            return []
 
 # Singleton instance
-_db_instance = None
+_database_instance = None
 
-def get_database() -> DatabaseManager:
-    """Database instance'ı al"""
-    global _db_instance
-    if _db_instance is None:
-        _db_instance = DatabaseManager()
-    return _db_instance 
+def get_database() -> Database:
+    """Database singleton instance'ını döndür"""
+    global _database_instance
+    if _database_instance is None:
+        _database_instance = Database()
+    return _database_instance 

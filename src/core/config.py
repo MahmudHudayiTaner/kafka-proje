@@ -1,8 +1,7 @@
 """
-Konfigürasyon yönetimi
+Basit konfigürasyon yönetimi
 """
 import os
-import pandas as pd
 from typing import Dict, Any
 from pathlib import Path
 
@@ -10,50 +9,27 @@ from pathlib import Path
 class Config:
     """Uygulama konfigürasyonu yönetimi"""
     
-    def __init__(self, config_path: str = "config.xlsx"):
-        self.config_path = config_path
-        self._config = self._load_config()
+    def __init__(self):
+        self._config = self._load_default_config()
         
-    def _load_config(self) -> Dict[str, Any]:
-        """Excel dosyasından konfigürasyon yükle"""
-        try:
-            if not os.path.exists(self.config_path):
-                raise FileNotFoundError(f"Konfigürasyon dosyası bulunamadı: {self.config_path}")
-            
-            df = pd.read_excel(self.config_path, engine='openpyxl')
-            config_dict = dict(zip(df['Name'], df['Value']))
-            
-            # Gerekli alanları kontrol et
-            required_fields = ['mail', 'mail_app_password', 'imap_server', 'db']
-            missing_fields = [field for field in required_fields if field not in config_dict]
-            
-            if missing_fields:
-                raise ValueError(f"Eksik konfigürasyon alanları: {missing_fields}")
-                
-            return config_dict
-            
-        except Exception as e:
-            raise RuntimeError(f"Konfigürasyon yüklenirken hata: {e}")
+    def _load_default_config(self) -> Dict[str, Any]:
+        """Varsayılan konfigürasyon yükle"""
+        return {
+            'database_path': 'data/basvurular.db',
+            'log_level': 'INFO',
+            'log_path': 'logs/app.log',
+            'upload_folder': 'web/uploads',
+            'max_file_size': 16 * 1024 * 1024,  # 16MB
+            'allowed_extensions': ['pdf']
+        }
     
     def get(self, key: str, default: Any = None) -> Any:
         """Konfigürasyon değeri al"""
         return self._config.get(key, default)
     
-    def get_email_config(self) -> Dict[str, str]:
-        """Email konfigürasyonu al"""
-        return {
-            'email': self.get('mail'),
-            'password': self.get('mail_app_password'),
-            'imap_server': self.get('imap_server')
-        }
-    
     def get_database_path(self) -> str:
         """Veritabanı yolu al"""
-        return self.get('db', 'db_kafka.db')
-    
-    def get_gemini_api_key(self) -> str:
-        """Gemini API anahtarı al"""
-        return self.get('gemini_api_key', '')
+        return self.get('database_path', 'data/basvurular.db')
     
     def get_log_level(self) -> str:
         """Log seviyesi al"""
@@ -63,23 +39,17 @@ class Config:
         """Log dosyası yolu al"""
         return self.get('log_path', 'logs/app.log')
     
-    def validate(self) -> bool:
-        """Konfigürasyon geçerliliğini kontrol et"""
-        try:
-            # Email ayarları kontrolü
-            email_config = self.get_email_config()
-            if not all(email_config.values()):
-                raise ValueError("Email konfigürasyonu eksik")
-            
-            # Veritabanı yolu kontrolü
-            db_path = self.get_database_path()
-            if not db_path:
-                raise ValueError("Veritabanı yolu belirtilmemiş")
-            
-            return True
-            
-        except Exception as e:
-            raise ValueError(f"Konfigürasyon geçersiz: {e}")
+    def get_upload_folder(self) -> str:
+        """Upload klasörü yolu al"""
+        return self.get('upload_folder', 'web/uploads')
+    
+    def get_max_file_size(self) -> int:
+        """Maksimum dosya boyutu al"""
+        return self.get('max_file_size', 16 * 1024 * 1024)
+    
+    def get_allowed_extensions(self) -> list:
+        """İzin verilen dosya uzantıları al"""
+        return self.get('allowed_extensions', ['pdf'])
 
 
 # Singleton instance

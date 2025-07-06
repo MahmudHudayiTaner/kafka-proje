@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Kafka Dil Akademisi - Kayıt Formu{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header text-center bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="fas fa-graduation-cap me-2"></i>
+                            Kafka Dil Akademisi Kayıt Formu
+                        </h3>
+                        <p class="mb-0 mt-2">Dil öğrenme yolculuğunuza başlayın!</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" action="{{ url_for('submit_basvuru') }}" enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="ad" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Ad *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="ad" 
+                                           name="ad" 
+                                           required 
+                                           placeholder="Adınızı giriniz">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="soyad" class="form-label">
+                                        <i class="fas fa-user me-1"></i>Soyad *
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="soyad" 
+                                           name="soyad" 
+                                           required 
+                                           placeholder="Soyadınızı giriniz">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="telefon" class="form-label">
+                                        <i class="fas fa-phone me-1"></i>Telefon *
+                                    </label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="telefon" 
+                                           name="telefon" 
+                                           required 
+                                           placeholder="05XX XXX XX XX">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="eposta" class="form-label">
+                                        <i class="fas fa-envelope me-1"></i>E-posta
+                                    </label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="eposta" 
+                                           name="eposta" 
+                                           placeholder="ornek@email.com">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="dogum_tarihi" class="form-label">
+                                        <i class="fas fa-calendar me-1"></i>Doğum Tarihi *
+                                    </label>
+                                    <input type="date" 
+                                           class="form-control" 
+                                           id="dogum_tarihi" 
+                                           name="dogum_tarihi" 
+                                           required>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="cinsiyet" class="form-label">
+                                        <i class="fas fa-venus-mars me-1"></i>Cinsiyet *
+                                    </label>
+                                    <select class="form-select" id="cinsiyet" name="cinsiyet" required>
+                                        <option value="">Seçiniz</option>
+                                        <option value="erkek">Erkek</option>
+                                        <option value="kadin">Kadın</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="kur_seviyesi" class="form-label">
+                                        <i class="fas fa-chart-line me-1"></i>Başvurulan Kur *
+                                    </label>
+                                    <select class="form-select" id="kur_seviyesi" name="kur_seviyesi" required>
+                                        <option value="">Kur seçiniz</option>
+                                        <option value="A1">A1 - Başlangıç</option>
+                                        <option value="A2">A2 - Temel</option>
+                                        <option value="B1">B1 - Orta Alt</option>
+                                        <option value="B2">B2 - Orta Üst</option>
+                                        <option value="C1">C1 - İleri</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="adres" class="form-label">
+                                    <i class="fas fa-map-marker-alt me-1"></i>Adres *
+                                </label>
+                                <textarea class="form-control" 
+                                          id="adres" 
+                                          name="adres" 
+                                          rows="3" 
+                                          required 
+                                          placeholder="Tam adresinizi giriniz"></textarea>
+                            </div>
+                            
+
+                            
+                            <div class="mb-3">
+                                <label for="pdf_dosya" class="form-label">
+                                    <i class="fas fa-file-pdf me-1"></i>Belge Yükle (Opsiyonel)
+                                </label>
+                                <input type="file" 
+                                       class="form-control" 
+                                       id="pdf_dosya" 
+                                       name="pdf_dosya" 
+                                       accept=".pdf">
+                                <div class="form-text">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Sadece PDF dosyaları kabul edilir (Maks. 16MB)
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-paper-plane me-2"></i>Kayıt Ol
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer text-center">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Bilgileriniz güvenle saklanır ve üçüncü taraflarla paylaşılmaz.
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Bilgi Kartları -->
+                <div class="row mt-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                <h6 class="card-title">Uzman Eğitmenler</h6>
+                                <p class="card-text small">Deneyimli ve sertifikalı öğretmenlerimizle öğrenin</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="fas fa-laptop fa-2x text-success mb-2"></i>
+                                <h6 class="card-title">Modern Eğitim</h6>
+                                <p class="card-text small">Teknolojik altyapı ve interaktif dersler</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="fas fa-certificate fa-2x text-warning mb-2"></i>
+                                <h6 class="card-title">Sertifika</h6>
+                                <p class="card-text small">Uluslararası geçerli sertifikalar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Form gönderildiğinde loading göster
+document.querySelector('form').addEventListener('submit', function() {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Gönderiliyor...';
+    submitBtn.disabled = true;
+});
+
+// Telefon formatı
+document.getElementById('telefon').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 0) {
+        value = value.match(/(\d{0,4})(\d{0,3})(\d{0,2})(\d{0,2})/);
+        e.target.value = !value[2] ? value[1] : !value[3] ? value[1] + ' ' + value[2] : !value[4] ? value[1] + ' ' + value[2] + ' ' + value[3] : value[1] + ' ' + value[2] + ' ' + value[3] + ' ' + value[4];
+    }
+});
+</script>
+{% endblock %} 

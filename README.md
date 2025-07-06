@@ -1,87 +1,111 @@
-# Kafka Proje - Gelen Başvurular Otomasyonu
+# Kafka Proje - Başvuru Sistemi
 
-Bu proje, Gmail'den "Başvuru Formu" başlıklı okunmamış mailleri otomatik olarak alır ve form verilerini SQLite veritabanına kaydeder.
+Basit ve kullanışlı bir web tabanlı başvuru formu sistemi.
 
 ## 🚀 Özellikler
 
-- Gmail IMAP bağlantısı ile mail okuma
-- "Başvuru Formu" başlıklı mailleri otomatik tespit
-- Mail içeriğinden form verilerini parse etme
-- SQLite veritabanına otomatik kaydetme
-- Okunan mailleri "okundu" olarak işaretleme
+- **Web Formu**: Kullanıcı dostu başvuru formu
+- **PDF Yükleme**: Opsiyonel PDF dosyası yükleme
+- **Veritabanı**: SQLite ile veri saklama
+- **Loglama**: Detaylı işlem logları
+- **Responsive**: Mobil uyumlu tasarım
 
 ## 📋 Gereksinimler
 
+- Python 3.8+
+- Flask
+- SQLite3
+
+## 🛠️ Kurulum
+
+1. **Projeyi klonlayın:**
 ```bash
-pip install pandas openpyxl
+git clone <repo-url>
+cd "Kafka Proje"
 ```
 
-## ⚙️ Kurulum
-
-1. Projeyi klonlayın:
+2. **Bağımlılıkları yükleyin:**
 ```bash
-git clone <repository-url>
-cd kafka-proje
+pip install -r requirements.txt
 ```
 
-2. `config.xlsx` dosyasını oluşturun ve aşağıdaki bilgileri ekleyin:
-   - `mail`: Gmail adresiniz
-   - `mail_app_password`: Gmail uygulama şifreniz
-   - `imap_server`: IMAP sunucu adresi (genellikle imap.gmail.com)
-   - `db`: SQLite veritabanı dosya yolu
-
-3. Gmail'de "2 Adımlı Doğrulama"yı etkinleştirin ve bir uygulama şifresi oluşturun.
-
-## 🎯 Kullanım
-
+3. **Uygulamayı başlatın:**
 ```bash
-python GelenBasvurularOtomasyon.py
+python run_web.py
+```
+
+4. **Tarayıcıda açın:**
+```
+http://localhost:5000
 ```
 
 ## 📁 Proje Yapısı
 
 ```
 Kafka Proje/
-├── GelenBasvurularOtomasyon.py  # Ana uygulama
-├── GelenDekontlarOtomasyon.py   # Dekont işleme
-├── pdf.py                        # PDF işleme
-├── sqlite.py                     # Veritabanı işlemleri
-├── config.xlsx                   # Konfigürasyon dosyası
-├── db_kafka.db                   # SQLite veritabanı
-└── README.md                     # Bu dosya
+├── data/                   # Veritabanı dosyaları
+├── logs/                   # Log dosyaları
+├── src/                    # Kaynak kodlar
+│   ├── core/              # Temel modüller
+│   ├── models/            # Veri modelleri
+│   └── utils/             # Yardımcı fonksiyonlar
+├── web/                   # Web uygulaması
+│   ├── static/            # CSS, JS dosyaları
+│   ├── templates/         # HTML şablonları
+│   └── uploads/           # Yüklenen dosyalar
+├── requirements.txt        # Python bağımlılıkları
+└── run_web.py            # Başlatıcı script
 ```
 
-## 🔧 Konfigürasyon
+## 🎯 Kullanım
 
-`config.xlsx` dosyasında aşağıdaki ayarları yapın:
+### Başvuru Formu
+- Ana sayfada başvuru formunu doldurun
+- PDF dosyası yükleyebilirsiniz (opsiyonel)
+- Form gönderildikten sonra veriler veritabanına kaydedilir
 
-| Name | Value |
-|------|-------|
-| mail | your-email@gmail.com |
-| mail_app_password | your-app-password |
-| imap_server | imap.gmail.com |
-| db | db_kafka.db |
+### Başvuru Listesi
+- `/basvurular` sayfasından tüm başvuruları görüntüleyebilirsiniz
+- Başvurular tarih sırasına göre listelenir
 
-## 📊 Veritabanı Şeması
+## 🔧 Geliştirme
 
-Başvuru verileri `gelenbasvurular` tablosunda saklanır:
+### Yeni Özellik Ekleme
+1. `src/models/` altında yeni modeller oluşturun
+2. `src/core/database.py`'de veritabanı işlemlerini ekleyin
+3. `web/app.py`'de yeni route'lar ekleyin
+4. `web/templates/` altında yeni sayfalar oluşturun
 
-- `id`: Otomatik artan ID
-- `ad`: Başvuru sahibinin adı
-- `soyad`: Başvuru sahibinin soyadı
-- `telefon`: Telefon numarası
-- `eposta`: E-posta adresi
-- `basvurulan_kur`: Başvuru yapılan kurum
-- `basvuru_tarihi`: Başvuru tarihi
+### Loglama
+- Tüm işlemler `logs/` klasöründe loglanır
+- Log seviyeleri: INFO, WARNING, ERROR
 
-## 🤝 Katkıda Bulunma
+## 📊 Veritabanı
 
-1. Bu repository'yi fork edin
-2. Yeni bir branch oluşturun (`git checkout -b feature/yeni-ozellik`)
-3. Değişikliklerinizi commit edin (`git commit -am 'Yeni özellik eklendi'`)
-4. Branch'inizi push edin (`git push origin feature/yeni-ozellik`)
-5. Pull Request oluşturun
+SQLite veritabanı `data/basvurular.db` dosyasında saklanır.
+
+**Tablolar:**
+- `basvurular`: Başvuru bilgileri
+
+## 🚨 Güvenlik
+
+- Form verileri doğrulanır ve temizlenir
+- Dosya yükleme güvenliği sağlanır
+- SQL injection koruması
 
 ## 📝 Lisans
 
-Bu proje MIT lisansı altında lisanslanmıştır. 
+Bu proje eğitim amaçlı geliştirilmiştir.
+
+## 🤝 Katkıda Bulunma
+
+1. Fork edin
+2. Feature branch oluşturun
+3. Değişikliklerinizi commit edin
+4. Pull request gönderin
+
+---
+
+**Geliştirici:** Kafka Proje Takımı  
+**Versiyon:** 1.0  
+**Son Güncelleme:** 2024 
