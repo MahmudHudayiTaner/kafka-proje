@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Ekstre Yükle{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary mb-3"><i class="fas fa-arrow-left"></i> Geri</a>
+    <h2>Ekstre Yükle</h2>
+    <form method="POST" enctype="multipart/form-data" class="mb-4">
+        <div class="form-group">
+            <label for="ekstre_pdf">PDF Ekstre Dosyası</label>
+            <input type="file" class="form-control-file" id="ekstre_pdf" name="ekstre_pdf" accept="application/pdf" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Yükle</button>
+    </form>
+
+    <h4>Yüklenen Ekstreler</h4>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Dosya Adı</th>
+                <th>Yükleme Tarihi</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dosya in ekstreler %}
+            <tr>
+                <td>{{ dosya }}</td>
+                <td>{{ dosya[:15]|replace('_',' ') }}</td>
+                <td>
+                    <!-- Analiz Et butonu burada olacak, sonraki adımda işlevsel yapılacak -->
+                    <button class="btn btn-info btn-sm" disabled>Analiz Et</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3">Henüz ekstre yüklenmedi.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %} 

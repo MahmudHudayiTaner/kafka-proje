@@ -384,78 +384,7 @@ class Database:
             self.logger.error(f"Başvuru güncelleme hatası: {e}")
             return False
 
-    # Öğrenci işlemleri
-    def ogrenci_ekle(self, ogrenci_data: Dict[str, Any]) -> Optional[int]:
-        """Yeni öğrenci ekle"""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                cursor.execute('''
-                    INSERT INTO ogrenciler 
-                    (ad, soyad, telefon, eposta, aktif_seviye, toplam_seviye_sayisi, durum)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    ogrenci_data['ad'],
-                    ogrenci_data['soyad'],
-                    ogrenci_data['telefon'],
-                    ogrenci_data.get('eposta'),
-                    ogrenci_data.get('aktif_seviye'),
-                    ogrenci_data.get('toplam_seviye_sayisi', 1),
-                    ogrenci_data.get('durum', 'aktif')
-                ))
-                
-                ogrenci_id = cursor.lastrowid
-                conn.commit()
-                
-                self.logger.info(f"Öğrenci eklendi: ID={ogrenci_id}")
-                return ogrenci_id
-                
-        except Exception as e:
-            self.logger.error(f"Öğrenci ekleme hatası: {e}")
-            return None
-    
-    def ogrenci_getir(self, ogrenci_id: int) -> Optional[Dict[str, Any]]:
-        """Öğrenci getir"""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                cursor.execute('''
-                    SELECT * FROM ogrenciler WHERE id = ?
-                ''', (ogrenci_id,))
-                
-                row = cursor.fetchone()
-                if row:
-                    columns = [desc[0] for desc in cursor.description]
-                    return dict(zip(columns, row))
-                
-                return None
-                
-        except Exception as e:
-            self.logger.error(f"Öğrenci getirme hatası: {e}")
-            return None
-    
-    def ogrencileri_listele(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Öğrencileri listele"""
-        try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                cursor.execute('''
-                    SELECT * FROM ogrenciler 
-                    ORDER BY kayit_tarihi DESC 
-                    LIMIT ?
-                ''', (limit,))
-                
-                rows = cursor.fetchall()
-                columns = [desc[0] for desc in cursor.description]
-                
-                return [dict(zip(columns, row)) for row in rows]
-                
-        except Exception as e:
-            self.logger.error(f"Öğrenci listeleme hatası: {e}")
-            return []
+    # ogrenciler, seviye_kayitlari, odemeler ile ilgili tüm fonksiyonlar ve SQL tabloları kaldırıldı
 
     # Seviye işlemleri
     def seviye_kaydi_ekle(self, seviye_data: Dict[str, Any]) -> Optional[int]:
@@ -735,6 +664,23 @@ class Database:
                 
         except Exception as e:
             self.logger.error(f"Dekont analizleri listeleme hatası: {e}")
+            return []
+
+    def dekont_analiz_bekleyenleri_listele(self) -> List[Dict[str, Any]]:
+        """Analiz edilmemiş dekontları döndür (dekontu var ama dekont_analizleri tablosunda kaydı yok)"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT b.id as basvuru_id, b.pdf_dosya_yolu
+                    FROM basvurular b
+                    LEFT JOIN dekont_analizleri d ON b.id = d.basvuru_id AND b.pdf_dosya_yolu = d.pdf_dosya_yolu
+                    WHERE b.pdf_dosya_yolu IS NOT NULL AND d.id IS NULL
+                ''')
+                rows = cursor.fetchall()
+                return [{'basvuru_id': row[0], 'pdf_dosya_yolu': row[1]} for row in rows]
+        except Exception as e:
+            self.logger.error(f"Analiz bekleyen dekontları listeleme hatası: {e}")
             return []
 
 # Singleton instance

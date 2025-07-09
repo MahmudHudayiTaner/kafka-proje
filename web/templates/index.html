@@ -3,6 +3,17 @@
 {% block title %}Kafka Dil Akademisi - Kayıt Formu{% endblock %}
 
 {% block content %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container">
+    <a class="navbar-brand" href="/">Kafka Dil Akademisi</a>
+    <div class="d-flex ms-auto gap-2">
+      <a class="btn btn-primary" href="/">Yeni Başvuru</a>
+      <a class="btn btn-outline-secondary" href="/admin/login">
+        <i class="fas fa-user-shield me-1"></i> Admin Girişi
+      </a>
+    </div>
+  </div>
+</nav>
 <div class="form-container">
     <div class="container">
         <div class="row justify-content-center">
@@ -11,12 +22,12 @@
                     <div class="card-header text-center bg-primary text-white">
                         <h3 class="mb-0">
                             <i class="fas fa-graduation-cap me-2"></i>
-                            Kafka Dil Akademisi Kayıt Formu
+                            Kayıt Başvuru Formu
                         </h3>
-                        <p class="mb-0 mt-2">Dil öğrenme yolculuğunuza başlayın!</p>
+                        <!-- Alt başlık kaldırıldı -->
                     </div>
                     <div class="card-body p-4">
-                        <form method="POST" action="{{ url_for('submit_basvuru') }}" enctype="multipart/form-data">
+                        <form method="POST" action="{{ url_for('user.submit_basvuru') }}" enctype="multipart/form-data">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="ad" class="form-label">

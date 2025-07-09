@@ -20,7 +20,7 @@
                                     style="display: none;">
                                 <i class="fas fa-trash me-1"></i>Seçilenleri Sil
                             </button>
-                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light btn-sm me-2">
+                            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-light btn-sm me-2">
                                 <i class="fas fa-arrow-left me-1"></i>Geri
                             </a>
                             <span class="badge bg-light text-dark">
@@ -31,110 +31,72 @@
                 </div>
                 <div class="card-body">
                     {% if basvurular %}
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>
-                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
-                                        </th>
-                                        <th>ID</th>
-                                        <th>Ad Soyad</th>
-                                        <th>Telefon</th>
-                                        <th>E-posta</th>
-                                        <th>Doğum Tarihi</th>
-                                        <th>Yaş</th>
-                                        <th>Cinsiyet</th>
-                                        <th>Başvurulan Kur</th>
-                                        <th>Başvuru Tarihi</th>
-                                        <th>PDF</th>
-                                        <th>İşlemler</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for basvuru in basvurular %}
-                                    <tr>
-                                        <td>
-                                            <input type="checkbox" class="basvuru-checkbox" value="{{ basvuru.id }}" onchange="updateDeleteButton()">
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary">#{{ basvuru.id }}</span>
-                                        </td>
-                                        <td>
-                                            <strong>{{ basvuru.ad }} {{ basvuru.soyad }}</strong>
-                                        </td>
-                                        <td>
-                                            <i class="fas fa-phone me-1"></i>{{ basvuru.telefon }}
-                                        </td>
-                                        <td>
-                                            {% if basvuru.eposta %}
-                                                <i class="fas fa-envelope me-1"></i>{{ basvuru.eposta }}
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <small>{{ basvuru.dogum_tarihi or '-' }}</small>
-                                        </td>
-                                        <td>
-                                            {% if basvuru.yas %}
-                                                <span class="badge bg-info">{{ basvuru.yas }}</span>
-                                            {% else %}
-                                                <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if basvuru.cinsiyet == 'erkek' %}
-                                                <span class="badge bg-primary">{{ basvuru.cinsiyet }}</span>
-                                            {% elif basvuru.cinsiyet == 'kadin' %}
-                                                <span class="badge bg-danger">{{ basvuru.cinsiyet }}</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">{{ basvuru.cinsiyet or '-' }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info">{{ basvuru.kur_seviyesi }}</span>
-                                        </td>
-                                        <td>
-                                            <small>{{ basvuru.basvuru_tarihi_formatted }}</small>
-                                        </td>
-                                        <td>
-                                            {% if basvuru.pdf_dosya_yolu %}
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-file-pdf me-1"></i>Var
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">
-                                                    <i class="fas fa-times me-1"></i>Yok
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ url_for('admin_basvuru_detay', basvuru_id=basvuru.id) }}" 
-                                                   class="btn btn-outline-primary" 
-                                                   title="Detay">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <button type="button" 
-                                                        class="btn btn-outline-success" 
-                                                        onclick="convertToStudent({{ basvuru.id }})"
-                                                        title="Öğrenciye Çevir">
-                                                    <i class="fas fa-user-graduate"></i>
-                                                </button>
-                                                <button type="button" 
-                                                        class="btn btn-outline-danger" 
-                                                        onclick="deleteBasvuru({{ basvuru.id }})"
-                                                        title="Sil">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                        <form id="bulkDeleteForm" method="POST" action="{{ url_for('admin.admin_basvuru_toplu_sil') }}">
+                            <div class="mb-2">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()"> Tümünü Seç
+                                <button type="submit" class="btn btn-danger btn-sm ms-2" onclick="return confirm('Seçili başvuruları silmek istediğinize emin misiniz?')">
+                                    <i class="fas fa-trash"></i> Seçilenleri Sil
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th></th>
+                                            <th>ID</th>
+                                            <th>Ad Soyad</th>
+                                            <th>Telefon</th>
+                                            <th>E-posta</th>
+                                            <th>Doğum Tarihi</th>
+                                            <th>Yaş</th>
+                                            <th>Cinsiyet</th>
+                                            <th>Başvurulan Kur</th>
+                                            <th>Başvuru Tarihi</th>
+                                            <th>PDF</th>
+                                            <th>İşlemler</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for basvuru in basvurular %}
+                                        <tr>
+                                            <td><input type="checkbox" class="basvuru-checkbox" name="basvuru_ids" value="{{ basvuru.id }}"></td>
+                                            <td><span class="badge bg-secondary">#{{ basvuru.id }}</span></td>
+                                            <td><strong>{{ basvuru.ad }} {{ basvuru.soyad }}</strong></td>
+                                            <td><i class="fas fa-phone me-1"></i>{{ basvuru.telefon }}</td>
+                                            <td>{% if basvuru.eposta %}<i class="fas fa-envelope me-1"></i>{{ basvuru.eposta }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                                            <td><small>{{ basvuru.dogum_tarihi or '-' }}</small></td>
+                                            <td>{% if basvuru.yas %}<span class="badge bg-info">{{ basvuru.yas }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                                            <td>{% if basvuru.cinsiyet == 'erkek' %}<span class="badge bg-primary">{{ basvuru.cinsiyet }}</span>{% elif basvuru.cinsiyet == 'kadin' %}<span class="badge bg-danger">{{ basvuru.cinsiyet }}</span>{% else %}<span class="badge bg-secondary">{{ basvuru.cinsiyet or '-' }}</span>{% endif %}</td>
+                                            <td><span class="badge bg-info">{{ basvuru.kur_seviyesi }}</span></td>
+                                            <td><small>{{ basvuru.basvuru_tarihi_formatted }}</small></td>
+                                            <td>{% if basvuru.pdf_dosya_yolu %}<span class="badge bg-success"><i class="fas fa-file-pdf me-1"></i>Var</span>{% else %}<span class="badge bg-secondary"><i class="fas fa-times me-1"></i>Yok</span>{% endif %}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{{ url_for('admin.admin_basvuru_detay', basvuru_id=basvuru.id) }}" 
+                                                       class="btn btn-outline-primary" 
+                                                       title="Detay">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-success" 
+                                                            onclick="convertToStudent({{ basvuru.id }})"
+                                                            title="Öğrenciye Çevir">
+                                                        <i class="fas fa-user-graduate"></i>
+                                                    </button>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-danger" 
+                                                            onclick="deleteBasvuru({{ basvuru.id }})"
+                                                            title="Sil">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </form>
                     {% else %}
                         <div class="text-center py-5">
                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
@@ -259,14 +221,11 @@ function convertToStudent(basvuruId) {
 }
 
 function toggleSelectAll() {
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const basvuruCheckboxes = document.querySelectorAll('.basvuru-checkbox');
-    
-    basvuruCheckboxes.forEach(checkbox => {
-        checkbox.checked = selectAllCheckbox.checked;
-    });
-    
-    updateDeleteButton();
+    var checkboxes = document.getElementsByClassName('basvuru-checkbox');
+    var selectAll = document.getElementById('selectAll');
+    for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = selectAll.checked;
+    }
 }
 
 function updateDeleteButton() {

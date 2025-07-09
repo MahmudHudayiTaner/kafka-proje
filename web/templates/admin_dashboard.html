@@ -10,6 +10,7 @@
                 <i class="fas fa-tachometer-alt text-primary"></i>
                 Admin Dashboard
             </h2>
+            <a href="{{ url_for('admin.admin_logout') }}" class="btn btn-outline-danger float-end ms-2">Çıkış Yap</a>
         </div>
     </div>
 
@@ -93,30 +94,23 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('admin_basvurular') }}" class="btn btn-primary btn-lg btn-block">
+                            <a href="{{ url_for('admin.admin_basvurular') }}" class="btn btn-primary btn-lg btn-block">
                                 <i class="fas fa-file-alt"></i>
                                 Başvuruları Görüntüle
                             </a>
                         </div>
                         <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('admin_ogrenciler') }}" class="btn btn-success btn-lg btn-block">
-                                <i class="fas fa-users"></i>
-                                Öğrencileri Yönet
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('admin_odemeler') }}" class="btn btn-info btn-lg btn-block">
-                                <i class="fas fa-money-bill-wave"></i>
-                                Ödemeleri Görüntüle
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('admin_dekont_analizleri') }}" class="btn btn-danger btn-lg btn-block">
+                            <a href="{{ url_for('admin.admin_dekont_analizleri') }}" class="btn btn-danger btn-lg btn-block">
                                 <i class="fas fa-file-pdf"></i>
                                 Dekont Analizleri
                             </a>
                         </div>
-
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.admin_ekstre_yukle') }}" class="btn btn-secondary btn-lg btn-block">
+                                <i class="fas fa-file-upload"></i>
+                                Ekstre Yükle
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

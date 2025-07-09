@@ -55,75 +55,7 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="fas fa-file-alt me-2"></i>Başvuru Sistemi
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if not session.admin_logged_in %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('index') }}">
-                                <i class="fas fa-plus me-1"></i>Yeni Başvuru
-                            </a>
-                        </li>
-                    {% endif %}
-                    
-                    {% if session.admin_logged_in %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" 
-                               data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-tachometer-alt me-1"></i>Admin Panel
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">
-                                        <i class="fas fa-tachometer-alt"></i>
-                                        Dashboard
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('admin_basvurular') }}">
-                                        <i class="fas fa-file-alt"></i>
-                                        Başvurular
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('admin_ogrenciler') }}">
-                                        <i class="fas fa-users"></i>
-                                        Öğrenciler
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('admin_odemeler') }}">
-                                        <i class="fas fa-money-bill-wave"></i>
-                                        Ödemeler
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('admin_logout') }}">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        Çıkış
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('admin_login') }}">
-                                <i class="fas fa-user-shield me-1"></i>Admin Girişi
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <!-- Başvuru Sistemi yazan navbar tamamen kaldırıldı -->
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}

@@ -13,7 +13,7 @@
                             <i class="fas fa-file-alt me-2"></i>Başvuru Detayı
                         </h4>
                         <div>
-                            <a href="{{ url_for('admin_basvurular') }}" class="btn btn-outline-light btn-sm me-2">
+                            <a href="{{ url_for('admin.admin_basvurular') }}" class="btn btn-outline-light btn-sm me-2">
                                 <i class="fas fa-arrow-left me-1"></i>Geri
                             </a>
                             <span class="badge bg-light text-dark">
@@ -140,7 +140,7 @@
                                     <label class="form-label fw-bold">PDF Dosyası:</label>
                                     <p class="form-control-plaintext">
                                         <i class="fas fa-file-pdf me-1 text-danger"></i>
-                                        <a href="/uploads/{{ basvuru.pdf_dosya_yolu.split('\\')[-1] if '\\' in basvuru.pdf_dosya_yolu else basvuru.pdf_dosya_yolu.split('/')[-1] }}" 
+                                        <a href="/uploads/dekontlar/{{ basvuru.pdf_dosya_yolu }}" 
                                            target="_blank" class="text-decoration-none">
                                             PDF'i Görüntüle
                                         </a>
@@ -200,7 +200,7 @@
                             <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                             <h5 class="text-warning">Başvuru bulunamadı</h5>
                             <p class="text-muted">Aradığınız başvuru mevcut değil veya silinmiş olabilir.</p>
-                            <a href="{{ url_for('admin_basvurular') }}" class="btn btn-primary">
+                            <a href="{{ url_for('admin.admin_basvurular') }}" class="btn btn-primary">
                                 <i class="fas fa-arrow-left me-1"></i>Başvuru Listesine Dön
                             </a>
                         </div>
